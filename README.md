@@ -4,6 +4,8 @@
 
 PWA vanilla (HTML / CSS / JS, Supabase) calquée sur le pattern de [Nudge](https://nudgenow.vercel.app/). Trois leviers combinés : **quota journalier dégressif**, **délai minimum entre deux clopes**, **stats riches** (heatmap, courbe 30 j, économies, série).
 
+**Live** : https://useember.vercel.app
+
 ## Setup pas à pas
 
 ### 1. Créer le projet Supabase
