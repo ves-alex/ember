@@ -907,8 +907,8 @@ async function transitionSplashToButton() {
   const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
   const scale = toRect.width / fromRect.width;
 
-  // 3. Cache le bouton cible pendant que le logo "se pose".
-  btn.style.visibility = "hidden";
+  // 3. Le bouton cible reste visible — c'est lui qui "absorbe" visuellement
+  //    le logo qui vient se poser dessus puis disparaît en fade-out.
 
   // 4. Sort le logo du flow : position fixed à sa position courante, on le
   //    déplacera par transform (FLIP).
@@ -920,12 +920,12 @@ async function transitionSplashToButton() {
   logo.style.margin = "0";
   logo.style.zIndex = "300";
   logo.style.animation = "none";        // stoppe la respiration
-  logo.style.willChange = "transform, filter";
+  logo.style.willChange = "transform, filter, opacity";
 
-  // 5. L'écran main émerge avec un léger retard (laisse le logo partir d'abord).
+  // 5. L'écran main émerge tôt pour que l'œil voie où le logo va se poser.
   target.animate(
-    [{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }],
-    { duration: 900, fill: "forwards", easing: "ease-out" }
+    [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1 }],
+    { duration: 850, fill: "forwards", easing: "ease-out" }
   );
 
   // 6. Le texte "Ember" du splash s'efface très vite.
@@ -937,27 +937,39 @@ async function transitionSplashToButton() {
     { duration: 300, easing: "ease-out", fill: "forwards" }
   );
 
-  // 7. Vol du logo vers le bouton — courbe douce avec un mid-keyframe pour
-  //    une trajectoire un peu plus naturelle qu'un simple A→B linéaire.
+  // 7. Vol du logo vers le bouton, puis fade-out en place :
+  //    - 0% → 65% : translate + scale jusqu'à la position/taille du bouton,
+  //                 la lueur ambre décline progressivement.
+  //    - 65% → 100% : le logo reste collé au bouton et fond en opacity 0,
+  //                   révélant naturellement le cercle gris du bouton dessous.
   const fly = logo.animate(
     [
       {
         transform: "translate(0, 0) scale(1)",
         filter: "drop-shadow(0 0 24px rgba(255, 140, 66, 0.35)) brightness(1.05)",
+        opacity: 1,
       },
       {
-        offset: 0.55,
+        offset: 0.5,
         transform:
-          "translate(" + (dx * 0.45) + "px, " + (dy * 0.45) + "px) scale(" + (1 + (scale - 1) * 0.45) + ")",
-        filter: "drop-shadow(0 0 56px rgba(255, 180, 110, 0.55)) brightness(1.18)",
+          "translate(" + (dx * 0.6) + "px, " + (dy * 0.6) + "px) scale(" + (1 + (scale - 1) * 0.55) + ")",
+        filter: "drop-shadow(0 0 30px rgba(255, 160, 90, 0.4)) brightness(1)",
+        opacity: 1,
+      },
+      {
+        offset: 0.65,
+        transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
+        filter: "drop-shadow(0 0 18px rgba(255, 140, 66, 0.25)) brightness(0.9)",
+        opacity: 1,
       },
       {
         transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
-        filter: "drop-shadow(0 0 36px rgba(255, 140, 66, 0.4)) brightness(1)",
+        filter: "drop-shadow(0 0 0 rgba(255, 140, 66, 0)) brightness(0.7)",
+        opacity: 0,
       },
     ],
     {
-      duration: 950,
+      duration: 1150,
       easing: "cubic-bezier(0.5, 0.05, 0.2, 1)",
       fill: "forwards",
     }
@@ -965,18 +977,7 @@ async function transitionSplashToButton() {
 
   await fly.finished;
 
-  // 8. Reveal du bouton : micro-pop en élastique qui matérialise la "fusion".
-  btn.style.visibility = "";
-  btn.animate(
-    [
-      { transform: "scale(0.94)", filter: "brightness(1.25)" },
-      { transform: "scale(1.04)", filter: "brightness(1.1)" },
-      { transform: "scale(1)", filter: "brightness(1)" },
-    ],
-    { duration: 350, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" }
-  );
-
-  // 9. Cleanup : retire le splash et nettoie les styles inline du logo.
+  // 8. Cleanup : retire le splash et nettoie les styles inline du logo.
   splash.classList.remove("active");
   logo.removeAttribute("style");
 }
