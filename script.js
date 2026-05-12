@@ -897,11 +897,6 @@ async function transitionSplashToButton() {
   const fromRect = logo.getBoundingClientRect();
   const toRect = btn.getBoundingClientRect();
 
-  // Petit debug visuel temporaire — affiche les positions mesurées en haut
-  // à gauche de l'écran pendant la transition. Permet de confirmer que la
-  // nouvelle version est chargée et de vérifier que les mesures sont OK.
-  showDebugMeasurements(fromRect, toRect);
-
   if (toRect.width === 0 || toRect.height === 0) {
     splash.classList.add("is-exiting");
     target.classList.add("is-entering");
@@ -1007,37 +1002,6 @@ async function transitionSplashToButton() {
   splash.classList.remove("active", "is-revealing");
   target.classList.remove("is-target-prep");
   logo.removeAttribute("style");
-  hideDebugMeasurements();
-}
-
-// ─── Debug visuel temporaire ───
-// Affiche les rects mesurés pendant la transition. À retirer une fois confirmé.
-function showDebugMeasurements(from, to) {
-  let d = document.getElementById("ember-debug");
-  if (!d) {
-    d = document.createElement("div");
-    d.id = "ember-debug";
-    d.style.cssText =
-      "position:fixed;top:env(safe-area-inset-top,40px);left:8px;z-index:9999;" +
-      "background:rgba(0,0,0,0.85);color:#ff8c42;font:11px monospace;" +
-      "padding:6px 8px;border-radius:6px;line-height:1.4;pointer-events:none;" +
-      "max-width:240px;border:1px solid #ff8c42;";
-    document.body.appendChild(d);
-  }
-  d.textContent =
-    "EMBER v14\n" +
-    "from: " + Math.round(from.left) + "," + Math.round(from.top) +
-    " · " + Math.round(from.width) + "x" + Math.round(from.height) + "\n" +
-    "to:   " + Math.round(to.left) + "," + Math.round(to.top) +
-    " · " + Math.round(to.width) + "x" + Math.round(to.height);
-  d.style.whiteSpace = "pre";
-}
-
-function hideDebugMeasurements() {
-  setTimeout(() => {
-    const d = document.getElementById("ember-debug");
-    if (d) d.remove();
-  }, 4000);
 }
 
 async function boot() {
