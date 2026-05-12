@@ -864,7 +864,7 @@ function transitionFromSplash(targetScreenId) {
   setTimeout(() => {
     splash.classList.remove("active", "is-exiting");
     target.classList.remove("is-entering");
-  }, 750);
+  }, 1350);
 }
 
 async function boot() {

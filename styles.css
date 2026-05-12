@@ -140,53 +140,70 @@ p {
   .ember-logo-breathing { animation: none; }
 }
 
-/* ───── Transition splash → écran suivant ─────
-   "Embrasement" : à la sortie, le logo continue à grossir et se dissout
-   dans sa propre lueur, le texte fade vers le haut, le splash s'estompe.
-   En parallèle, l'écran cible fait son entrée en fade + translate léger. */
+/* ───── Transition splash → écran suivant (wind-up + release) ─────
+   Phase 1 (0-25%) : le logo se contracte légèrement (inspiration finale)
+                     et sa lueur s'intensifie — anticipation préparatoire.
+   Phase 2 (25-100%) : embrasement, le logo grossit jusqu'à scale 1.6,
+                       la lueur explose, l'opacité descend par paliers.
+   L'écran cible démarre son entrée au pic de l'embrasement (delay 580ms).
+   Total ≈ 1.2 s, beaucoup plus organique qu'un cross-fade direct. */
 
 #screen-loading.is-exiting {
   position: fixed;
   inset: 0;
   z-index: 200;
   pointer-events: none;
-  animation: splash-out 700ms ease-out forwards;
+  animation: splash-out 1200ms ease-out forwards;
 }
 #screen-loading.is-exiting .ember-logo-breathing {
-  animation: ember-embers-out 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: ember-embers-out 1100ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 #screen-loading.is-exiting .loading-text {
-  animation: splash-text-out 400ms ease-out forwards;
+  animation: splash-text-out 500ms 100ms ease-out forwards;
 }
 
 @keyframes splash-out {
-  to { opacity: 0; }
+  0%, 60% { opacity: 1; }      /* le splash reste opaque pendant la majorité du release */
+  100%    { opacity: 0; }
 }
+
 @keyframes ember-embers-out {
+  /* Wind-up : contraction + lueur qui monte */
   0% {
     transform: scale(1);
     filter: drop-shadow(0 0 24px rgba(255, 140, 66, 0.35)) brightness(1.05);
     opacity: 1;
   }
-  60% {
-    filter: drop-shadow(0 0 70px rgba(255, 200, 130, 0.7)) brightness(1.45);
+  25% {
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 48px rgba(255, 180, 110, 0.55)) brightness(1.22);
+    opacity: 1;
+  }
+  /* Release : embrasement progressif */
+  65% {
+    transform: scale(1.28);
+    filter: drop-shadow(0 0 82px rgba(255, 200, 130, 0.7)) brightness(1.5);
+    opacity: 0.85;
   }
   100% {
-    transform: scale(1.55);
-    filter: drop-shadow(0 0 90px rgba(255, 180, 110, 0.8)) brightness(1.6);
+    transform: scale(1.6);
+    filter: drop-shadow(0 0 110px rgba(255, 180, 110, 0.85)) brightness(1.65);
     opacity: 0;
   }
 }
+
 @keyframes splash-text-out {
   to { opacity: 0; transform: translateY(-6px); }
 }
 
+/* Écran cible : émerge au pic de l'embrasement avec un léger scale-up
+   (cohérence d'inertie avec le logo qui finit d'exploser). */
 .screen.is-entering {
-  animation: screen-fade-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: screen-emerge 700ms 580ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes screen-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes screen-emerge {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
