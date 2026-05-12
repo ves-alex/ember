@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
   <title>Ember — tracker de cigarettes</title>
 </head>
 <body>
@@ -18,7 +18,28 @@
   <!-- Splash de chargement -->
   <section id="screen-loading" class="screen active">
     <div class="loading-wrap">
-      <div class="ember-logo" aria-hidden="true"></div>
+      <svg class="ember-logo ember-logo-breathing" viewBox="0 0 512 512" aria-hidden="true">
+        <defs>
+          <radialGradient id="splash-halo" cx="256" cy="256" r="220" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ff8c42" stop-opacity="0.55"/>
+            <stop offset="35%" stop-color="#ff8c42" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#ff8c42" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="splash-core" cx="256" cy="252" r="110" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ffe2b5"/>
+            <stop offset="20%" stop-color="#ffc080"/>
+            <stop offset="55%" stop-color="#ff8c42"/>
+            <stop offset="100%" stop-color="#c66a31"/>
+          </radialGradient>
+          <radialGradient id="splash-hilight" cx="232" cy="228" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#fff0d4" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#fff0d4" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="256" cy="256" r="220" fill="url(#splash-halo)"/>
+        <circle cx="256" cy="256" r="110" fill="url(#splash-core)"/>
+        <circle cx="232" cy="228" r="40" fill="url(#splash-hilight)"/>
+      </svg>
       <p class="loading-text">Ember</p>
     </div>
   </section>
@@ -26,7 +47,28 @@
   <!-- Écran d'authentification -->
   <section id="screen-auth" class="screen">
     <div class="auth-wrap">
-      <div class="ember-logo" aria-hidden="true"></div>
+      <svg class="ember-logo" viewBox="0 0 512 512" aria-hidden="true">
+        <defs>
+          <radialGradient id="auth-halo" cx="256" cy="256" r="220" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ff8c42" stop-opacity="0.55"/>
+            <stop offset="35%" stop-color="#ff8c42" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#ff8c42" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="auth-core" cx="256" cy="252" r="110" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ffe2b5"/>
+            <stop offset="20%" stop-color="#ffc080"/>
+            <stop offset="55%" stop-color="#ff8c42"/>
+            <stop offset="100%" stop-color="#c66a31"/>
+          </radialGradient>
+          <radialGradient id="auth-hilight" cx="232" cy="228" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#fff0d4" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#fff0d4" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="256" cy="256" r="220" fill="url(#auth-halo)"/>
+        <circle cx="256" cy="256" r="110" fill="url(#auth-core)"/>
+        <circle cx="232" cy="228" r="40" fill="url(#auth-hilight)"/>
+      </svg>
       <h1>Ember</h1>
       <p class="tagline">Reprendre la main, une clope à la fois.</p>
       <button id="btn-google" class="btn btn-primary btn-google" type="button">
@@ -315,7 +357,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Logique appli -->
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 
   <!-- Service worker -->
   <script>

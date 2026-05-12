@@ -108,13 +108,36 @@ p {
   text-transform: uppercase;
 }
 
-/* Logo (cercle avec point ambre — placeholder simple) */
+/* Logo Ember : SVG "braise pure" cohérent avec l'icône PWA */
 .ember-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 60%, var(--accent) 0%, var(--accent-dim) 40%, var(--surface) 75%);
-  box-shadow: 0 0 60px var(--accent-glow), inset 0 -8px 24px rgba(0, 0, 0, 0.4);
+  width: 120px;
+  height: 120px;
+  display: block;
+  filter: drop-shadow(0 0 24px rgba(255, 140, 66, 0.25));
+}
+
+/* Respiration douce : le logo grossit et s'illumine en cycle (splash uniquement) */
+.ember-logo-breathing {
+  width: 160px;
+  height: 160px;
+  animation: ember-breathe 2.6s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform, filter;
+}
+
+@keyframes ember-breathe {
+  0%, 100% {
+    transform: scale(0.94);
+    filter: drop-shadow(0 0 18px rgba(255, 140, 66, 0.2)) brightness(0.88);
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 36px rgba(255, 140, 66, 0.5)) brightness(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember-logo-breathing { animation: none; }
 }
 
 /* ───────── Auth ───────── */

@@ -839,6 +839,13 @@ async function enterApp() {
   fillSettingsForm();
 }
 
+// Garantit un temps minimum sur le splash pour que la respiration du logo
+// ait le temps de se jouer avant la transition (sinon on flash l'écran auth).
+function holdSplash(start, minMs) {
+  const remaining = Math.max(0, minMs - (Date.now() - start));
+  return new Promise((r) => setTimeout(r, remaining));
+}
+
 async function boot() {
   if (!initSupabaseClient()) {
     window.addEventListener("supabase-loaded", boot, { once: true });
@@ -853,13 +860,19 @@ async function boot() {
     return;
   }
 
+  const splashStart = Date.now();
+  const MIN_SPLASH_MS = 1900;     // 1.9s ≈ moins d'un cycle complet de respiration
+
   const user = await ensureSession();
   if (!user) {
+    await holdSplash(splashStart, MIN_SPLASH_MS);
     showScreen("screen-auth");
     return;
   }
   state.user = user;
   state.plan = await loadQuitPlan();
+
+  await holdSplash(splashStart, MIN_SPLASH_MS);
 
   if (!state.plan) {
     showScreen("screen-onboarding");
