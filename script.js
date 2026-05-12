@@ -846,6 +846,27 @@ function holdSplash(start, minMs) {
   return new Promise((r) => setTimeout(r, remaining));
 }
 
+// Transition "embrasement" : le logo splash grossit + se dissout dans sa
+// lueur pendant que l'écran cible fait son entrée en fade. Cross-fade en
+// superposant les deux écrans (splash passe en position:fixed via la classe
+// .is-exiting). Le clean-up enlève les classes après la fin des animations.
+function transitionFromSplash(targetScreenId) {
+  const splash = document.getElementById("screen-loading");
+  const target = document.getElementById(targetScreenId);
+
+  splash.classList.add("is-exiting");
+  target.classList.add("active", "is-entering");
+
+  const showNav = ["screen-main", "screen-stats", "screen-settings"].includes(targetScreenId);
+  $("#bottom-nav").hidden = !showNav;
+  $$(".nav-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.target === targetScreenId));
+
+  setTimeout(() => {
+    splash.classList.remove("active", "is-exiting");
+    target.classList.remove("is-entering");
+  }, 750);
+}
+
 async function boot() {
   if (!initSupabaseClient()) {
     window.addEventListener("supabase-loaded", boot, { once: true });
@@ -866,20 +887,26 @@ async function boot() {
   const user = await ensureSession();
   if (!user) {
     await holdSplash(splashStart, MIN_SPLASH_MS);
-    showScreen("screen-auth");
+    transitionFromSplash("screen-auth");
     return;
   }
   state.user = user;
   state.plan = await loadQuitPlan();
 
-  await holdSplash(splashStart, MIN_SPLASH_MS);
-
   if (!state.plan) {
-    showScreen("screen-onboarding");
+    await holdSplash(splashStart, MIN_SPLASH_MS);
+    transitionFromSplash("screen-onboarding");
     showOnboardingStep(1);
     return;
   }
-  await enterApp();
+
+  // Charge les clopes en parallèle du splash hold pour gagner du temps.
+  state.cigarettes = await loadCigarettes30d();
+  await holdSplash(splashStart, MIN_SPLASH_MS);
+  transitionFromSplash("screen-main");
+  renderMain();
+  startDelayTimer();
+  fillSettingsForm();
 }
 
 // ───────── Event wiring ─────────
