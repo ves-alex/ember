@@ -884,22 +884,25 @@ async function transitionSplashToButton() {
   const text = splash.querySelector(".loading-text");
   const btn = document.getElementById("btn-plus-one");
 
-  // 1. Active screen-main : il sera derrière le splash opaque, le main
-  //    n'apparaîtra qu'au moment où le splash fade-out (étape 5).
+  // 1. Active screen-main : il sera derrière le splash opaque pendant la
+  //    transition. Le splash garde un fond opaque jusqu'à 55% du timing
+  //    puis fade-out, révélant naturellement le main qui était déjà là.
   target.classList.add("active");
   document.getElementById("bottom-nav").hidden = false;
   $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.target === "screen-main"));
 
-  // 2. Force deux frames pour garantir que le layout du main est calculé
-  //    avant de mesurer le bouton (sinon getBoundingClientRect peut retourner
-  //    une position obsolète sur certains navigateurs).
+  // 2. Force deux frames pour garantir le layout avant la mesure.
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   const fromRect = logo.getBoundingClientRect();
   const toRect = btn.getBoundingClientRect();
 
+  // Petit debug visuel temporaire — affiche les positions mesurées en haut
+  // à gauche de l'écran pendant la transition. Permet de confirmer que la
+  // nouvelle version est chargée et de vérifier que les mesures sont OK.
+  showDebugMeasurements(fromRect, toRect);
+
   if (toRect.width === 0 || toRect.height === 0) {
-    // Fallback : simple cross-fade si on n'a pas pu mesurer.
     splash.classList.add("is-exiting");
     target.classList.add("is-entering");
     await new Promise((r) => setTimeout(r, 1350));
@@ -908,24 +911,21 @@ async function transitionSplashToButton() {
     return;
   }
 
-  const dx = (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2);
-  const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
-  const scale = toRect.width / fromRect.width;
-
-  // 3. Sort le logo du splash : il devient une couche flottante par-dessus
-  //    splash ET main, avec un z-index élevé pour rester visible quand le
-  //    splash fade-out. position:fixed l'isole du flow du splash.
+  // 3. Sort le logo du splash : position:fixed à sa position courante, on
+  //    animera ses propriétés left/top/width/height directement (plus
+  //    prévisible que transform sur SVG, notamment sur iOS Safari).
   logo.style.position = "fixed";
   logo.style.left = fromRect.left + "px";
   logo.style.top = fromRect.top + "px";
   logo.style.width = fromRect.width + "px";
   logo.style.height = fromRect.height + "px";
   logo.style.margin = "0";
-  logo.style.zIndex = "1000";       // au-dessus du splash (z=200) et du nav (z=50)
+  logo.style.zIndex = "1000";       // au-dessus du splash et du nav
   logo.style.animation = "none";    // stoppe la respiration
-  logo.style.willChange = "transform, filter, opacity";
+  logo.style.transform = "none";    // s'assure qu'aucun transform résiduel
+  logo.style.willChange = "left, top, width, height, opacity, filter";
 
-  // 4. Texte "Ember" fade rapide (il reste dans le splash, fade avec lui).
+  // 4. Texte "Ember" fade rapide.
   text.animate(
     [
       { opacity: 1, transform: "translateY(0)" },
@@ -934,39 +934,38 @@ async function transitionSplashToButton() {
     { duration: 350, easing: "ease-out", fill: "forwards" }
   );
 
-  // 5. Splash : garde un fond opaque qui masque le main, puis fade-out à 55%
-  //    du timing, révélant naturellement screen-main qui était déjà en place.
+  // 5. Splash : fond opaque puis fade-out à 55%.
   splash.classList.add("is-revealing");
 
-  // 6. Vol du logo vers le bouton :
-  //    - 0% → 70% : translate + scale jusqu'à la position/taille du bouton,
-  //                 lueur ambre qui décline en arrivant.
-  //    - 70% → 100% : reste collé au bouton et fade-out, révélant le bouton
-  //                   gris (qui est déjà dessous, jamais caché).
+  // 6. Vol du logo vers le bouton, animation directe sur position+taille :
+  //    - 0% → 70% : se déplace et s'ajuste à la taille du bouton.
+  //    - 70% → 100% : reste posé sur le bouton et fade-out en opacité.
   const fly = logo.animate(
     [
       {
-        transform: "translate(0, 0) scale(1)",
+        left: fromRect.left + "px",
+        top: fromRect.top + "px",
+        width: fromRect.width + "px",
+        height: fromRect.height + "px",
+        opacity: 1,
         filter: "drop-shadow(0 0 24px rgba(255, 140, 66, 0.35)) brightness(1.05)",
-        opacity: 1,
-      },
-      {
-        offset: 0.5,
-        transform:
-          "translate(" + (dx * 0.62) + "px, " + (dy * 0.62) + "px) scale(" + (1 + (scale - 1) * 0.6) + ")",
-        filter: "drop-shadow(0 0 28px rgba(255, 160, 90, 0.4)) brightness(1)",
-        opacity: 1,
       },
       {
         offset: 0.7,
-        transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
-        filter: "drop-shadow(0 0 16px rgba(255, 140, 66, 0.22)) brightness(0.88)",
+        left: toRect.left + "px",
+        top: toRect.top + "px",
+        width: toRect.width + "px",
+        height: toRect.height + "px",
         opacity: 1,
+        filter: "drop-shadow(0 0 14px rgba(255, 140, 66, 0.2)) brightness(0.85)",
       },
       {
-        transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
-        filter: "drop-shadow(0 0 0 rgba(255, 140, 66, 0)) brightness(0.65)",
+        left: toRect.left + "px",
+        top: toRect.top + "px",
+        width: toRect.width + "px",
+        height: toRect.height + "px",
         opacity: 0,
+        filter: "drop-shadow(0 0 0 rgba(255, 140, 66, 0)) brightness(0.6)",
       },
     ],
     {
@@ -978,9 +977,40 @@ async function transitionSplashToButton() {
 
   await fly.finished;
 
-  // 7. Cleanup : retire les classes et nettoie les styles inline du logo.
+  // 7. Cleanup.
   splash.classList.remove("active", "is-revealing");
   logo.removeAttribute("style");
+  hideDebugMeasurements();
+}
+
+// ─── Debug visuel temporaire ───
+// Affiche les rects mesurés pendant la transition. À retirer une fois confirmé.
+function showDebugMeasurements(from, to) {
+  let d = document.getElementById("ember-debug");
+  if (!d) {
+    d = document.createElement("div");
+    d.id = "ember-debug";
+    d.style.cssText =
+      "position:fixed;top:env(safe-area-inset-top,40px);left:8px;z-index:9999;" +
+      "background:rgba(0,0,0,0.85);color:#ff8c42;font:11px monospace;" +
+      "padding:6px 8px;border-radius:6px;line-height:1.4;pointer-events:none;" +
+      "max-width:240px;border:1px solid #ff8c42;";
+    document.body.appendChild(d);
+  }
+  d.textContent =
+    "EMBER v12\n" +
+    "from: " + Math.round(from.left) + "," + Math.round(from.top) +
+    " · " + Math.round(from.width) + "x" + Math.round(from.height) + "\n" +
+    "to:   " + Math.round(to.left) + "," + Math.round(to.top) +
+    " · " + Math.round(to.width) + "x" + Math.round(to.height);
+  d.style.whiteSpace = "pre";
+}
+
+function hideDebugMeasurements() {
+  setTimeout(() => {
+    const d = document.getElementById("ember-debug");
+    if (d) d.remove();
+  }, 4000);
 }
 
 async function boot() {
