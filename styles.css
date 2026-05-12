@@ -216,6 +216,21 @@ p {
   #screen-loading.is-exiting { opacity: 0; }
 }
 
+/* ─── Variante "atterrissage" (transition vers screen-main) ───
+   Le splash garde un fond opaque qui masque le main pendant que le logo
+   voyage en position:fixed par-dessus, puis fade-out révèle le main. */
+#screen-loading.is-revealing {
+  background: var(--bg);
+  animation: splash-reveal 1300ms ease-out forwards;
+}
+@keyframes splash-reveal {
+  0%, 55% { opacity: 1; }
+  100%    { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #screen-loading.is-revealing { animation: none; opacity: 0; }
+}
+
 /* ───────── Auth ───────── */
 .auth-wrap {
   flex: 1;

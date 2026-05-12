@@ -884,17 +884,22 @@ async function transitionSplashToButton() {
   const text = splash.querySelector(".loading-text");
   const btn = document.getElementById("btn-plus-one");
 
-  // 1. Active screen-main en arrière-plan pour permettre la mesure du bouton.
+  // 1. Active screen-main : il sera derrière le splash opaque, le main
+  //    n'apparaîtra qu'au moment où le splash fade-out (étape 5).
   target.classList.add("active");
   document.getElementById("bottom-nav").hidden = false;
   $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.target === "screen-main"));
 
-  // 2. Force le layout puis mesure les positions.
+  // 2. Force deux frames pour garantir que le layout du main est calculé
+  //    avant de mesurer le bouton (sinon getBoundingClientRect peut retourner
+  //    une position obsolète sur certains navigateurs).
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
   const fromRect = logo.getBoundingClientRect();
   const toRect = btn.getBoundingClientRect();
 
-  // Fallback safe si le layout n'est pas encore prêt (toRect dégénéré).
   if (toRect.width === 0 || toRect.height === 0) {
+    // Fallback : simple cross-fade si on n'a pas pu mesurer.
     splash.classList.add("is-exiting");
     target.classList.add("is-entering");
     await new Promise((r) => setTimeout(r, 1350));
@@ -907,41 +912,37 @@ async function transitionSplashToButton() {
   const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
   const scale = toRect.width / fromRect.width;
 
-  // 3. Le bouton cible reste visible — c'est lui qui "absorbe" visuellement
-  //    le logo qui vient se poser dessus puis disparaît en fade-out.
-
-  // 4. Sort le logo du flow : position fixed à sa position courante, on le
-  //    déplacera par transform (FLIP).
+  // 3. Sort le logo du splash : il devient une couche flottante par-dessus
+  //    splash ET main, avec un z-index élevé pour rester visible quand le
+  //    splash fade-out. position:fixed l'isole du flow du splash.
   logo.style.position = "fixed";
   logo.style.left = fromRect.left + "px";
   logo.style.top = fromRect.top + "px";
   logo.style.width = fromRect.width + "px";
   logo.style.height = fromRect.height + "px";
   logo.style.margin = "0";
-  logo.style.zIndex = "300";
-  logo.style.animation = "none";        // stoppe la respiration
+  logo.style.zIndex = "1000";       // au-dessus du splash (z=200) et du nav (z=50)
+  logo.style.animation = "none";    // stoppe la respiration
   logo.style.willChange = "transform, filter, opacity";
 
-  // 5. L'écran main émerge tôt pour que l'œil voie où le logo va se poser.
-  target.animate(
-    [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1 }],
-    { duration: 850, fill: "forwards", easing: "ease-out" }
-  );
-
-  // 6. Le texte "Ember" du splash s'efface très vite.
+  // 4. Texte "Ember" fade rapide (il reste dans le splash, fade avec lui).
   text.animate(
     [
       { opacity: 1, transform: "translateY(0)" },
       { opacity: 0, transform: "translateY(-6px)" },
     ],
-    { duration: 300, easing: "ease-out", fill: "forwards" }
+    { duration: 350, easing: "ease-out", fill: "forwards" }
   );
 
-  // 7. Vol du logo vers le bouton, puis fade-out en place :
-  //    - 0% → 65% : translate + scale jusqu'à la position/taille du bouton,
-  //                 la lueur ambre décline progressivement.
-  //    - 65% → 100% : le logo reste collé au bouton et fond en opacity 0,
-  //                   révélant naturellement le cercle gris du bouton dessous.
+  // 5. Splash : garde un fond opaque qui masque le main, puis fade-out à 55%
+  //    du timing, révélant naturellement screen-main qui était déjà en place.
+  splash.classList.add("is-revealing");
+
+  // 6. Vol du logo vers le bouton :
+  //    - 0% → 70% : translate + scale jusqu'à la position/taille du bouton,
+  //                 lueur ambre qui décline en arrivant.
+  //    - 70% → 100% : reste collé au bouton et fade-out, révélant le bouton
+  //                   gris (qui est déjà dessous, jamais caché).
   const fly = logo.animate(
     [
       {
@@ -952,24 +953,24 @@ async function transitionSplashToButton() {
       {
         offset: 0.5,
         transform:
-          "translate(" + (dx * 0.6) + "px, " + (dy * 0.6) + "px) scale(" + (1 + (scale - 1) * 0.55) + ")",
-        filter: "drop-shadow(0 0 30px rgba(255, 160, 90, 0.4)) brightness(1)",
+          "translate(" + (dx * 0.62) + "px, " + (dy * 0.62) + "px) scale(" + (1 + (scale - 1) * 0.6) + ")",
+        filter: "drop-shadow(0 0 28px rgba(255, 160, 90, 0.4)) brightness(1)",
         opacity: 1,
       },
       {
-        offset: 0.65,
+        offset: 0.7,
         transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
-        filter: "drop-shadow(0 0 18px rgba(255, 140, 66, 0.25)) brightness(0.9)",
+        filter: "drop-shadow(0 0 16px rgba(255, 140, 66, 0.22)) brightness(0.88)",
         opacity: 1,
       },
       {
         transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
-        filter: "drop-shadow(0 0 0 rgba(255, 140, 66, 0)) brightness(0.7)",
+        filter: "drop-shadow(0 0 0 rgba(255, 140, 66, 0)) brightness(0.65)",
         opacity: 0,
       },
     ],
     {
-      duration: 1150,
+      duration: 1300,
       easing: "cubic-bezier(0.5, 0.05, 0.2, 1)",
       fill: "forwards",
     }
@@ -977,8 +978,8 @@ async function transitionSplashToButton() {
 
   await fly.finished;
 
-  // 8. Cleanup : retire le splash et nettoie les styles inline du logo.
-  splash.classList.remove("active");
+  // 7. Cleanup : retire les classes et nettoie les styles inline du logo.
+  splash.classList.remove("active", "is-revealing");
   logo.removeAttribute("style");
 }
 
