@@ -846,25 +846,139 @@ function holdSplash(start, minMs) {
   return new Promise((r) => setTimeout(r, remaining));
 }
 
-// Transition "embrasement" : le logo splash grossit + se dissout dans sa
-// lueur pendant que l'écran cible fait son entrée en fade. Cross-fade en
-// superposant les deux écrans (splash passe en position:fixed via la classe
-// .is-exiting). Le clean-up enlève les classes après la fin des animations.
-function transitionFromSplash(targetScreenId) {
+// Transition splash → écran cible.
+//
+// Pour screen-main, on fait un "atterrissage" : le logo se déplace et
+// se pose dans le gros bouton +1, dont les visuels (disque ambre rayonnant)
+// sont proches du logo. L'écran main fade-in derrière en parallèle, le
+// bouton cible reste invisible jusqu'à la fin de l'atterrissage puis
+// reçoit un micro-pop de confirmation. Technique FLIP (mesure runtime).
+//
+// Pour les autres écrans (auth, onboarding), on garde l'embrasement
+// classique : le logo grossit et se dissout sur place.
+async function transitionFromSplash(targetScreenId) {
+  if (targetScreenId === "screen-main") {
+    await transitionSplashToButton();
+    return;
+  }
+
   const splash = document.getElementById("screen-loading");
   const target = document.getElementById(targetScreenId);
 
   splash.classList.add("is-exiting");
   target.classList.add("active", "is-entering");
 
-  const showNav = ["screen-main", "screen-stats", "screen-settings"].includes(targetScreenId);
+  const showNav = ["screen-stats", "screen-settings"].includes(targetScreenId);
   $("#bottom-nav").hidden = !showNav;
   $$(".nav-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.target === targetScreenId));
 
-  setTimeout(() => {
+  await new Promise((r) => setTimeout(r, 1350));
+  splash.classList.remove("active", "is-exiting");
+  target.classList.remove("is-entering");
+}
+
+async function transitionSplashToButton() {
+  const splash = document.getElementById("screen-loading");
+  const target = document.getElementById("screen-main");
+  const logo = splash.querySelector(".ember-logo-breathing");
+  const text = splash.querySelector(".loading-text");
+  const btn = document.getElementById("btn-plus-one");
+
+  // 1. Active screen-main en arrière-plan pour permettre la mesure du bouton.
+  target.classList.add("active");
+  document.getElementById("bottom-nav").hidden = false;
+  $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.target === "screen-main"));
+
+  // 2. Force le layout puis mesure les positions.
+  const fromRect = logo.getBoundingClientRect();
+  const toRect = btn.getBoundingClientRect();
+
+  // Fallback safe si le layout n'est pas encore prêt (toRect dégénéré).
+  if (toRect.width === 0 || toRect.height === 0) {
+    splash.classList.add("is-exiting");
+    target.classList.add("is-entering");
+    await new Promise((r) => setTimeout(r, 1350));
     splash.classList.remove("active", "is-exiting");
     target.classList.remove("is-entering");
-  }, 1350);
+    return;
+  }
+
+  const dx = (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2);
+  const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
+  const scale = toRect.width / fromRect.width;
+
+  // 3. Cache le bouton cible pendant que le logo "se pose".
+  btn.style.visibility = "hidden";
+
+  // 4. Sort le logo du flow : position fixed à sa position courante, on le
+  //    déplacera par transform (FLIP).
+  logo.style.position = "fixed";
+  logo.style.left = fromRect.left + "px";
+  logo.style.top = fromRect.top + "px";
+  logo.style.width = fromRect.width + "px";
+  logo.style.height = fromRect.height + "px";
+  logo.style.margin = "0";
+  logo.style.zIndex = "300";
+  logo.style.animation = "none";        // stoppe la respiration
+  logo.style.willChange = "transform, filter";
+
+  // 5. L'écran main émerge avec un léger retard (laisse le logo partir d'abord).
+  target.animate(
+    [{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }],
+    { duration: 900, fill: "forwards", easing: "ease-out" }
+  );
+
+  // 6. Le texte "Ember" du splash s'efface très vite.
+  text.animate(
+    [
+      { opacity: 1, transform: "translateY(0)" },
+      { opacity: 0, transform: "translateY(-6px)" },
+    ],
+    { duration: 300, easing: "ease-out", fill: "forwards" }
+  );
+
+  // 7. Vol du logo vers le bouton — courbe douce avec un mid-keyframe pour
+  //    une trajectoire un peu plus naturelle qu'un simple A→B linéaire.
+  const fly = logo.animate(
+    [
+      {
+        transform: "translate(0, 0) scale(1)",
+        filter: "drop-shadow(0 0 24px rgba(255, 140, 66, 0.35)) brightness(1.05)",
+      },
+      {
+        offset: 0.55,
+        transform:
+          "translate(" + (dx * 0.45) + "px, " + (dy * 0.45) + "px) scale(" + (1 + (scale - 1) * 0.45) + ")",
+        filter: "drop-shadow(0 0 56px rgba(255, 180, 110, 0.55)) brightness(1.18)",
+      },
+      {
+        transform: "translate(" + dx + "px, " + dy + "px) scale(" + scale + ")",
+        filter: "drop-shadow(0 0 36px rgba(255, 140, 66, 0.4)) brightness(1)",
+      },
+    ],
+    {
+      duration: 950,
+      easing: "cubic-bezier(0.5, 0.05, 0.2, 1)",
+      fill: "forwards",
+    }
+  );
+
+  await fly.finished;
+
+  // 8. Reveal du bouton : micro-pop en élastique qui matérialise la "fusion".
+  btn.style.visibility = "";
+  btn.animate(
+    [
+      { transform: "scale(0.94)", filter: "brightness(1.25)" },
+      { transform: "scale(1.04)", filter: "brightness(1.1)" },
+      { transform: "scale(1)", filter: "brightness(1)" },
+    ],
+    { duration: 350, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" }
+  );
+
+  // 9. Cleanup : retire le splash et nettoie les styles inline du logo.
+  splash.classList.remove("active");
+  logo.removeAttribute("style");
 }
 
 async function boot() {
@@ -903,10 +1017,13 @@ async function boot() {
   // Charge les clopes en parallèle du splash hold pour gagner du temps.
   state.cigarettes = await loadCigarettes30d();
   await holdSplash(splashStart, MIN_SPLASH_MS);
-  transitionFromSplash("screen-main");
+
+  // Pré-render le main avant la transition pour que la mesure du bouton
+  // soit fiable et que l'écran soit en place dès qu'il fade-in.
   renderMain();
-  startDelayTimer();
   fillSettingsForm();
+  await transitionFromSplash("screen-main");
+  startDelayTimer();
 }
 
 // ───────── Event wiring ─────────
