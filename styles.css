@@ -217,11 +217,21 @@ p {
 }
 
 /* ─── Variante "atterrissage" (transition vers screen-main) ───
-   Le splash garde un fond opaque qui masque le main pendant que le logo
-   voyage en position:fixed par-dessus, puis fade-out révèle le main. */
+   Pendant la transition, on superpose splash et target en position:fixed
+   (sinon ils se positionnent en block flow et le target est rendu sous le
+   splash, pas par-dessus — bug observé : le bouton +1 était mesuré à
+   y=1268 hors du viewport). */
 #screen-loading.is-revealing {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
   background: var(--bg);
   animation: splash-reveal 1300ms ease-out forwards;
+}
+.screen.is-target-prep {
+  position: fixed;
+  inset: 0;
+  z-index: 1;        /* derrière le splash (z=200), devant le body */
 }
 @keyframes splash-reveal {
   0%, 55% { opacity: 1; }

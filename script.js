@@ -884,10 +884,10 @@ async function transitionSplashToButton() {
   const text = splash.querySelector(".loading-text");
   const btn = document.getElementById("btn-plus-one");
 
-  // 1. Active screen-main : il sera derrière le splash opaque pendant la
-  //    transition. Le splash garde un fond opaque jusqu'à 55% du timing
-  //    puis fade-out, révélant naturellement le main qui était déjà là.
-  target.classList.add("active");
+  // 1. Active screen-main + le positionne en fixed pour qu'il se superpose
+  //    au splash (sinon il se placerait en block flow EN-DESSOUS du splash,
+  //    et le bouton +1 mesurerait à y=1268 hors du viewport).
+  target.classList.add("active", "is-target-prep");
   document.getElementById("bottom-nav").hidden = false;
   $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.target === "screen-main"));
 
@@ -979,6 +979,7 @@ async function transitionSplashToButton() {
 
   // 7. Cleanup.
   splash.classList.remove("active", "is-revealing");
+  target.classList.remove("is-target-prep");
   logo.removeAttribute("style");
   hideDebugMeasurements();
 }
@@ -998,7 +999,7 @@ function showDebugMeasurements(from, to) {
     document.body.appendChild(d);
   }
   d.textContent =
-    "EMBER v12\n" +
+    "EMBER v13\n" +
     "from: " + Math.round(from.left) + "," + Math.round(from.top) +
     " · " + Math.round(from.width) + "x" + Math.round(from.height) + "\n" +
     "to:   " + Math.round(to.left) + "," + Math.round(to.top) +
