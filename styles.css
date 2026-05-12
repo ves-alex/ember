@@ -226,7 +226,7 @@ p {
   inset: 0;
   z-index: 200;
   background: var(--bg);
-  animation: splash-reveal 1300ms ease-out forwards;
+  animation: splash-reveal 1800ms ease-out forwards;
 }
 .screen.is-target-prep {
   position: fixed;
@@ -234,7 +234,7 @@ p {
   z-index: 1;        /* derrière le splash (z=200), devant le body */
 }
 @keyframes splash-reveal {
-  0%, 55% { opacity: 1; }
+  0%, 60% { opacity: 1; }
   100%    { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {

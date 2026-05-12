@@ -937,9 +937,26 @@ async function transitionSplashToButton() {
   // 5. Splash : fond opaque puis fade-out à 55%.
   splash.classList.add("is-revealing");
 
-  // 6. Vol du logo vers le bouton, animation directe sur position+taille :
-  //    - 0% → 70% : se déplace et s'ajuste à la taille du bouton.
-  //    - 70% → 100% : reste posé sur le bouton et fade-out en opacité.
+  // 6. Vol du logo vers le bouton, puis "embrasement" jusqu'à épouser le
+  //    contour du cercle.
+  //
+  //    Géométrie : dans le SVG du logo (viewBox 512), le disque ambre
+  //    saturé est un cercle r=110, soit ~43% de la viewBox. Pour que
+  //    visuellement ce disque coïncide avec le bouton (taille toRect),
+  //    le logo entier doit faire toRect.width / 0.43 ≈ 2.3 × toRect.width.
+  //    Le halo (cercle r=220, presque toute la viewBox) déborde alors
+  //    autour du bouton — effet "lueur" voulu.
+  const embraceFactor = 2.3;
+  const finalW = toRect.width * embraceFactor;
+  const finalH = toRect.height * embraceFactor;
+  const finalLeft = (toRect.left + toRect.width / 2) - finalW / 2;
+  const finalTop = (toRect.top + toRect.height / 2) - finalH / 2;
+
+  // Keyframes :
+  //  - 0%   : position de départ (centre splash, taille 160)
+  //  - 65%  : arrivé au-dessus du bouton ET grossi à la taille "embrace"
+  //  - 78%  : reste posé brièvement (laisse l'œil percevoir l'arrivée)
+  //  - 100% : opacity 0 en place, révélant le cercle gris du bouton
   const fly = logo.animate(
     [
       {
@@ -951,25 +968,34 @@ async function transitionSplashToButton() {
         filter: "drop-shadow(0 0 24px rgba(255, 140, 66, 0.35)) brightness(1.05)",
       },
       {
-        offset: 0.7,
-        left: toRect.left + "px",
-        top: toRect.top + "px",
-        width: toRect.width + "px",
-        height: toRect.height + "px",
+        offset: 0.65,
+        left: finalLeft + "px",
+        top: finalTop + "px",
+        width: finalW + "px",
+        height: finalH + "px",
         opacity: 1,
-        filter: "drop-shadow(0 0 14px rgba(255, 140, 66, 0.2)) brightness(0.85)",
+        filter: "drop-shadow(0 0 40px rgba(255, 160, 90, 0.5)) brightness(1.1)",
       },
       {
-        left: toRect.left + "px",
-        top: toRect.top + "px",
-        width: toRect.width + "px",
-        height: toRect.height + "px",
+        offset: 0.78,
+        left: finalLeft + "px",
+        top: finalTop + "px",
+        width: finalW + "px",
+        height: finalH + "px",
+        opacity: 1,
+        filter: "drop-shadow(0 0 26px rgba(255, 140, 66, 0.32)) brightness(0.95)",
+      },
+      {
+        left: finalLeft + "px",
+        top: finalTop + "px",
+        width: finalW + "px",
+        height: finalH + "px",
         opacity: 0,
         filter: "drop-shadow(0 0 0 rgba(255, 140, 66, 0)) brightness(0.6)",
       },
     ],
     {
-      duration: 1300,
+      duration: 1800,
       easing: "cubic-bezier(0.5, 0.05, 0.2, 1)",
       fill: "forwards",
     }
@@ -999,7 +1025,7 @@ function showDebugMeasurements(from, to) {
     document.body.appendChild(d);
   }
   d.textContent =
-    "EMBER v13\n" +
+    "EMBER v14\n" +
     "from: " + Math.round(from.left) + "," + Math.round(from.top) +
     " · " + Math.round(from.width) + "x" + Math.round(from.height) + "\n" +
     "to:   " + Math.round(to.left) + "," + Math.round(to.top) +
