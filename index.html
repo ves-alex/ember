@@ -359,11 +359,23 @@
   <!-- Logique appli -->
   <script src="script.js?v=10"></script>
 
-  <!-- Service worker -->
+  <!-- Service worker + auto-reload sur nouvelle version -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
+        navigator.serviceWorker.register("./sw.js").then((reg) => {
+          reg.update().catch(() => {});
+        }).catch(() => {});
+
+        // Quand un nouveau SW prend le contrôle (après skipWaiting + claim),
+        // on reload la page automatiquement pour qu'elle charge le nouveau code.
+        // Ce mécanisme corrige les caches tenaces côté iOS Safari notamment.
+        let isReloading = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (isReloading) return;
+          isReloading = true;
+          window.location.reload();
+        });
       });
     }
   </script>
