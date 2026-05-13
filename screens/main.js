@@ -1,0 +1,179 @@
+// Écran principal : compteur du jour, bouton +1, délai, chips,
+// et les deux modals (confirmation bypass / sélection trigger).
+
+import { state } from "../state.js";
+import {
+  $, $$, pad2, fmtTime, fmtMinSec, fmtDateFr, startOfDay, daysBetween,
+} from "../utils.js";
+import { insertCigarette } from "../db.js";
+
+export function effectiveQuota(plan) {
+  if (!plan) return 15;
+  const start = new Date(plan.start_date + "T00:00:00");
+  const weeks = Math.max(0, Math.floor(daysBetween(start, new Date()) / 7));
+  const reduced = plan.daily_quota - (plan.weekly_reduction || 0) * weeks;
+  return Math.max(1, reduced);
+}
+
+export function renderMain() {
+  const now = new Date();
+  $("#header-date").textContent = fmtDateFr(now);
+
+  const today = startOfDay(now);
+  const todayCigs = state.cigarettes.filter((c) => new Date(c.smoked_at) >= today);
+  const quota = effectiveQuota(state.plan);
+
+  $("#counter-value").textContent = todayCigs.length;
+  $("#counter-quota").textContent = quota;
+  const counterEl = $("#counter-value");
+  counterEl.classList.toggle("is-warning", todayCigs.length >= quota * 0.8 && todayCigs.length < quota);
+  counterEl.classList.toggle("is-danger", todayCigs.length >= quota);
+
+  let status;
+  if (todayCigs.length === 0) status = "Aucune clope aujourd'hui. Tiens bon.";
+  else if (todayCigs.length < quota) status = "Tu es dans ton quota.";
+  else if (todayCigs.length === quota) status = "Quota atteint. Chaque clope en plus est un choix.";
+  else status = "Au-delà de ton quota (+" + (todayCigs.length - quota) + ").";
+  $("#counter-status").textContent = status;
+
+  const last = state.cigarettes[0];
+  state.lastCigaretteId = last ? last.id : null;
+  updateDelayDisplay(now);
+
+  $("#chip-avg-interval").textContent = computeAvgInterval(todayCigs);
+  $("#chip-yesterday").textContent = computeYesterdayCount(state.cigarettes);
+  $("#chip-last").textContent = last ? fmtTime(new Date(last.smoked_at)) : "—";
+}
+
+function computeAvgInterval(todayCigs) {
+  if (todayCigs.length < 2) return "—";
+  const sorted = [...todayCigs].sort((a, b) => new Date(a.smoked_at) - new Date(b.smoked_at));
+  let sumMin = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    sumMin += (new Date(sorted[i].smoked_at) - new Date(sorted[i - 1].smoked_at)) / 60000;
+  }
+  const avg = Math.round(sumMin / (sorted.length - 1));
+  if (avg >= 60) return Math.floor(avg / 60) + "h" + pad2(avg % 60);
+  return avg + " min";
+}
+
+function computeYesterdayCount(allCigs) {
+  const today = startOfDay(new Date());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  return allCigs.filter((c) => {
+    const t = new Date(c.smoked_at);
+    return t >= yesterday && t < today;
+  }).length;
+}
+
+function updateDelayDisplay(now) {
+  const last = state.cigarettes[0];
+  const minDelay = (state.plan && state.plan.min_delay_minutes) || 60;
+  const btn = $("#btn-plus-one");
+  const todayCigs = state.cigarettes.filter((c) => new Date(c.smoked_at) >= startOfDay(now));
+  const quota = effectiveQuota(state.plan);
+  const overQuota = todayCigs.length >= quota;
+
+  if (!last) {
+    $("#delay-label").textContent = "Disponible";
+    $("#delay-label").classList.remove("is-pending");
+    $("#delay-countdown").hidden = true;
+    btn.classList.remove("is-pending");
+    btn.classList.toggle("is-over-quota", overQuota);
+    return;
+  }
+
+  const elapsedSec = Math.floor((now - new Date(last.smoked_at)) / 1000);
+  const remainSec = minDelay * 60 - elapsedSec;
+
+  if (remainSec > 0) {
+    $("#delay-label").textContent = "Prochaine dispo dans";
+    $("#delay-label").classList.add("is-pending");
+    $("#delay-countdown").textContent = fmtMinSec(remainSec);
+    $("#delay-countdown").hidden = false;
+    btn.classList.add("is-pending");
+    btn.classList.remove("is-over-quota");
+  } else {
+    $("#delay-label").textContent = "Disponible";
+    $("#delay-label").classList.remove("is-pending");
+    $("#delay-countdown").hidden = true;
+    btn.classList.remove("is-pending");
+    btn.classList.toggle("is-over-quota", overQuota);
+  }
+}
+
+export function startDelayTimer() {
+  if (state.delayTimer) clearInterval(state.delayTimer);
+  state.delayTimer = setInterval(() => updateDelayDisplay(new Date()), 1000);
+}
+
+export async function handlePlusOne() {
+  const now = new Date();
+  const last = state.cigarettes[0];
+  const minDelay = (state.plan && state.plan.min_delay_minutes) || 60;
+  const todayCount = state.cigarettes.filter((c) => new Date(c.smoked_at) >= startOfDay(now)).length;
+  const quota = effectiveQuota(state.plan);
+
+  // 1. Délai en cours ?
+  if (last) {
+    const elapsedMin = (now - new Date(last.smoked_at)) / 60000;
+    if (elapsedMin < minDelay) {
+      const remainMin = Math.ceil(minDelay - elapsedMin);
+      const ok = await confirmDialog(
+        "Tu fumes avant le délai",
+        "Il restait " + remainMin + " min avant ta prochaine clope prévue. Tu es sûr ?"
+      );
+      if (!ok) return;
+    }
+  }
+
+  // 2. Au-delà du quota ?
+  if (todayCount >= quota) {
+    const ok = await confirmDialog(
+      "Quota atteint",
+      "Tu as déjà fumé " + todayCount + " clope" + (todayCount > 1 ? "s" : "") +
+        " aujourd'hui (quota : " + quota + "). Tu veux vraiment continuer ?"
+    );
+    if (!ok) return;
+  }
+
+  // 3. INSERT
+  const inserted = await insertCigarette();
+  if (!inserted) return;
+
+  state.cigarettes.unshift(inserted);
+  state.lastCigaretteId = inserted.id;
+  renderMain();
+
+  // 4. Modal trigger (skippable)
+  openTriggerModal(inserted.id);
+}
+
+function confirmDialog(title, body) {
+  return new Promise((resolve) => {
+    $("#modal-confirm-title").textContent = title;
+    $("#modal-confirm-body").textContent = body;
+    $("#modal-confirm").hidden = false;
+    const okBtn = $("#btn-confirm-ok");
+    const cancelBtn = $("#btn-confirm-cancel");
+    const cleanup = () => {
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      $("#modal-confirm").hidden = true;
+    };
+    const onOk = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+  });
+}
+
+function openTriggerModal(cigId) {
+  $("#modal-trigger").hidden = false;
+  $("#modal-trigger").dataset.cigId = cigId;
+}
+
+export function closeTriggerModal() {
+  $("#modal-trigger").hidden = true;
+}

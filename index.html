@@ -346,18 +346,11 @@
     </div>
   </div>
 
-  <!-- SDK Supabase via CDN ESM jsdelivr -->
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-    window.__createSupabaseClient = createClient;
-    window.dispatchEvent(new Event("supabase-loaded"));
-  </script>
-
-  <!-- Chart.js pour le graphique 30j -->
+  <!-- Chart.js pour le graphique 30j (UMD global window.Chart) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Logique appli -->
-  <script src="script.js?v=14"></script>
+  <!-- Logique appli (modules ES6 — voir app.js + state/utils/supabase/db/transitions/screens) -->
+  <script type="module" src="app.js?v=15"></script>
 
   <!-- Service worker + auto-reload sur nouvelle version -->
   <script>
