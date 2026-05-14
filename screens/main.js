@@ -6,6 +6,7 @@ import {
   $, $$, pad2, fmtTime, fmtMinSec, fmtDateFr, startOfDay, daysBetween,
 } from "../utils.js";
 import { insertCigarette } from "../db.js";
+import { getLabels } from "../labels.js";
 
 export function effectiveQuota(plan) {
   if (!plan) return 15;
@@ -29,12 +30,19 @@ export function renderMain() {
   counterEl.classList.toggle("is-warning", todayCigs.length >= quota * 0.8 && todayCigs.length < quota);
   counterEl.classList.toggle("is-danger", todayCigs.length >= quota);
 
+  const L = getLabels();
   let status;
-  if (todayCigs.length === 0) status = "Aucune clope aujourd'hui. Tiens bon.";
-  else if (todayCigs.length < quota) status = "Tu es dans ton quota.";
-  else if (todayCigs.length === quota) status = "Quota atteint. Chaque clope en plus est un choix.";
-  else status = "Au-delà de ton quota (+" + (todayCigs.length - quota) + ").";
+  if (todayCigs.length === 0) status = L.counterZero;
+  else if (todayCigs.length < quota) status = L.counterInQuota;
+  else if (todayCigs.length === quota) status = L.counterAtQuota;
+  else status = L.counterOverQuota(todayCigs.length - quota);
   $("#counter-status").textContent = status;
+
+  // Labels dynamiques sur le bouton +1 (le texte HTML est juste un placeholder
+  // initial, c'est ce render qui le rend cohérent avec le mode courant).
+  const plusLabelEl = $("#btn-plus-one .plus-label");
+  if (plusLabelEl) plusLabelEl.textContent = L.plusButtonLabel;
+  $("#btn-plus-one").setAttribute("aria-label", L.plusAriaLabel);
 
   const last = state.cigarettes[0];
   state.lastCigaretteId = last ? last.id : null;
@@ -115,14 +123,16 @@ export async function handlePlusOne() {
   const todayCount = state.cigarettes.filter((c) => new Date(c.smoked_at) >= startOfDay(now)).length;
   const quota = effectiveQuota(state.plan);
 
+  const L = getLabels();
+
   // 1. Délai en cours ?
   if (last) {
     const elapsedMin = (now - new Date(last.smoked_at)) / 60000;
     if (elapsedMin < minDelay) {
       const remainMin = Math.ceil(minDelay - elapsedMin);
       const ok = await confirmDialog(
-        "Tu fumes avant le délai",
-        "Il restait " + remainMin + " min avant ta prochaine clope prévue. Tu es sûr ?"
+        L.confirmDelayTitle,
+        L.confirmDelayBody(remainMin)
       );
       if (!ok) return;
     }
@@ -131,9 +141,8 @@ export async function handlePlusOne() {
   // 2. Au-delà du quota ?
   if (todayCount >= quota) {
     const ok = await confirmDialog(
-      "Quota atteint",
-      "Tu as déjà fumé " + todayCount + " clope" + (todayCount > 1 ? "s" : "") +
-        " aujourd'hui (quota : " + quota + "). Tu veux vraiment continuer ?"
+      L.confirmQuotaTitle,
+      L.confirmQuotaBody(todayCount, quota)
     );
     if (!ok) return;
   }
@@ -151,12 +160,15 @@ export async function handlePlusOne() {
 }
 
 function confirmDialog(title, body) {
+  const L = getLabels();
   return new Promise((resolve) => {
     $("#modal-confirm-title").textContent = title;
     $("#modal-confirm-body").textContent = body;
-    $("#modal-confirm").hidden = false;
     const okBtn = $("#btn-confirm-ok");
     const cancelBtn = $("#btn-confirm-cancel");
+    okBtn.textContent = L.confirmYes;
+    cancelBtn.textContent = L.confirmNo;
+    $("#modal-confirm").hidden = false;
     const cleanup = () => {
       okBtn.removeEventListener("click", onOk);
       cancelBtn.removeEventListener("click", onCancel);

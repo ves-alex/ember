@@ -20,12 +20,38 @@ import {
 import { renderStats, renderDailyChart } from "./screens/stats.js";
 import { fillSettingsForm, saveSettings, exportJSON } from "./screens/settings.js";
 import {
-  showOnboardingStep, getCurrentStep, submitOnboarding,
+  showOnboardingStep, getCurrentStep, setPickedMode, submitOnboarding,
 } from "./screens/onboarding.js";
+import { getLabels } from "./labels.js";
+
+// Applique les labels dépendant du mode dans l'UI globale. À appeler après
+// chaque changement de `state.plan.tracking_mode` (au boot, après un save
+// settings qui change le mode, etc.).
+function applyModeToUI() {
+  const L = getLabels();
+
+  // Bouton +1 dans l'écran main
+  const plusLabelEl = $("#btn-plus-one .plus-label");
+  if (plusLabelEl) plusLabelEl.textContent = L.plusButtonLabel;
+  $("#btn-plus-one").setAttribute("aria-label", L.plusAriaLabel);
+
+  // Labels de la section Settings → Prix + nb par boîte + libellé hebdo
+  const priceLabel = $("#set-price-label");
+  if (priceLabel) priceLabel.textContent = L.boxLabel;
+  const unitsLabel = $("#set-units-per-box-label");
+  if (unitsLabel) unitsLabel.textContent = L.unitsPerBoxLabel;
+  const weeklyLabel = $("#set-weekly-label");
+  if (weeklyLabel) weeklyLabel.textContent = "Réduction hebdomadaire (" + L.unitPlural + "/semaine)";
+
+  // Section "Économies" sur l'écran stats : visible uniquement en mode cigarette
+  const savingsSection = document.querySelector(".stat-savings");
+  if (savingsSection) savingsSection.hidden = !L.showSavings;
+}
 
 async function enterApp() {
   state.cigarettes = await loadCigarettes30d();
   showScreen("screen-main");
+  applyModeToUI();
   renderMain();
   startDelayTimer();
   fillSettingsForm();
@@ -66,6 +92,7 @@ async function boot() {
 
   // Pré-render le main avant la transition pour que la mesure du bouton
   // soit fiable et que l'écran soit en place dès qu'il fade-in.
+  applyModeToUI();
   renderMain();
   fillSettingsForm();
   await transitionFromSplash("screen-main");
@@ -79,7 +106,13 @@ function wireEvents() {
     await signOut();
     showScreen("screen-auth");
   });
-  $("#btn-save-settings").addEventListener("click", saveSettings);
+  $("#btn-save-settings").addEventListener("click", async () => {
+    const result = await saveSettings();
+    if (result.ok && result.modeChanged) {
+      applyModeToUI();
+      renderMain();   // Refresh compteur/status avec les nouveaux labels
+    }
+  });
   $("#btn-export").addEventListener("click", exportJSON);
 
   // Bottom nav
@@ -92,10 +125,24 @@ function wireEvents() {
     });
   });
 
-  // Onboarding
+  // Onboarding — étape 1 : choix du mode (clic direct, pas de bouton Suivant)
+  $$(".onb-mode-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const mode = btn.dataset.mode;
+      // Imp. : on doit fixer state.plan.tracking_mode AVANT d'appeler getLabels(),
+      // sinon getLabels() retombe sur 'cigarette' par fallback. On simule un
+      // plan partiel le temps de l'onboarding pour que les labels suivants
+      // soient cohérents.
+      state.plan = { tracking_mode: mode };
+      setPickedMode(mode, getLabels());
+      showOnboardingStep(2);
+    });
+  });
+
+  // Onboarding — boutons Suivant / Retour
   $("#btn-onb-next").addEventListener("click", async () => {
     const step = getCurrentStep();
-    if (step < 3) {
+    if (step < 4) {
       showOnboardingStep(step + 1);
       return;
     }

@@ -1,8 +1,19 @@
 # ember
 
-> Tracker de cigarettes pour arrêter de fumer progressivement.
+> Tracker de cigarettes (ou de pastilles Nicorette) pour réduire progressivement sa consommation.
 
-PWA vanilla (HTML / CSS / JS, Supabase) calquée sur le pattern de [Nudge](https://nudgenow.vercel.app/). Trois leviers combinés : **quota journalier dégressif**, **délai minimum entre deux clopes**, **stats riches** (heatmap, courbe 30 j, économies, série).
+PWA vanilla (HTML / CSS / JS, Supabase) calquée sur le pattern de [Nudge](https://nudgenow.vercel.app/). Trois leviers combinés : **quota journalier dégressif**, **délai minimum entre deux prises**, **stats riches** (heatmap, courbe 30 j, économies, série).
+
+## Modes de tracking
+
+Ember supporte deux modes, choisis à l'onboarding et modifiables ensuite dans les réglages :
+
+| Mode | Cas d'usage | Quota défaut | Délai défaut | Source des defaults |
+|---|---|---|---|---|
+| **Cigarette** (default) | Sevrage tabagique progressif | 15/jour | 60 min | Pratique commune |
+| **Pastille** | Substituts nicotiniques (Nicorette…) | 12/jour | 30 min | [Notice ANSM Nicorette 2 mg](https://base-donnees-publique.medicaments.gouv.fr/medicament/65043451/extrait) (max 15/j, min 9/j sem. 1-6) |
+
+En mode pastille, la section "Économies" est masquée (les pastilles coûtent, pas d'économies à célébrer). Les 18 triggers (stress, café, anxiété…) restent disponibles dans les deux modes.
 
 **Live** : https://useember.vercel.app
 
@@ -20,9 +31,11 @@ PWA vanilla (HTML / CSS / JS, Supabase) calquée sur le pattern de [Nudge](https
 
 Dans le dashboard Supabase, ouvre **SQL Editor** et exécute dans l'ordre :
 
-1. `supabase/schema.sql` — crée les tables `cigarettes` et `quit_plan`
+1. `supabase/schema.sql` — crée les tables `cigarettes` et `quit_plan` (inclut la colonne `tracking_mode`)
 2. `supabase/rls.sql` — active la Row Level Security (chaque user ne voit que ses données)
 3. `supabase/grants.sql` — autorise les sessions authentifiées à lire/écrire
+
+**Pour les installations existantes** (DB déjà en place avant le 2026-05-14) : exécuter aussi `supabase/migration-2026-05-14-tracking-mode.sql` pour ajouter la colonne `tracking_mode` sur les tables existantes.
 
 ### 3. Activer Google OAuth
 
@@ -33,7 +46,7 @@ Dans **Authentication → Providers → Google** :
 
 ### 4. Brancher l'app
 
-Édite `script.js` (en haut du fichier) et remplace :
+Édite `state.js` (en haut du fichier) et remplace :
 
 ```js
 const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
@@ -49,7 +62,7 @@ cd /Users/alexv/ember
 python3 -m http.server 8000
 ```
 
-Puis ouvre http://localhost:8000 dans Safari ou Chrome. Tu devrais voir l'écran de login. Connecte-toi avec Google, fais l'onboarding (3 étapes : quota, délai, prix), puis l'écran principal apparaît.
+Puis ouvre http://localhost:8000 dans Safari ou Chrome. Tu devrais voir l'écran de login. Connecte-toi avec Google, fais l'onboarding (4 étapes : mode, quota, délai, prix), puis l'écran principal apparaît.
 
 ### 6. Déployer sur Vercel
 
@@ -75,7 +88,18 @@ URL finale : `https://ember.vercel.app`.
 ```
 ember/
 ├── index.html       # 5 écrans (auth, onboarding, main, stats, settings) dans une SPA
-├── script.js        # logique métier — wrapper restRequest() pour parler à Supabase
+├── app.js           # point d'entrée — boot + wireEvents + applyModeToUI
+├── state.js         # état global + constantes (SUPABASE_URL, TRIGGER_LABELS…)
+├── utils.js         # helpers DOM ($, $$) + dates
+├── supabase.js      # client + wrapper restRequest() + auth
+├── db.js            # loadQuitPlan, loadCigarettes30d, insertCigarette…
+├── labels.js        # bundles textuels par mode (cigarette / pastille)
+├── transitions.js   # showScreen + animations splash
+├── screens/
+│   ├── main.js      # compteur, bouton +1, modals
+│   ├── stats.js     # semaine, graphe, heatmap, triggers, savings, streak
+│   ├── settings.js  # form + select mode + export JSON
+│   └── onboarding.js # 4 étapes (mode → quota → délai → prix)
 ├── styles.css       # palette graphite + accent ambre #ff8c42
 ├── manifest.json    # PWA installable
 ├── sw.js            # service worker no-cache (juste pour rendre l'app installable)
@@ -83,7 +107,8 @@ ember/
 └── supabase/
     ├── schema.sql
     ├── rls.sql
-    └── grants.sql
+    ├── grants.sql
+    └── migration-2026-05-14-tracking-mode.sql
 ```
 
 ## Pourquoi un wrapper REST plutôt que le SDK Supabase ?

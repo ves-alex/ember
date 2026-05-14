@@ -387,6 +387,60 @@ p {
 }
 .onboarding-footer .btn { flex: 1; }
 
+/* Étape 1 onboarding : choix du mode (cigarette / pastille) */
+.onb-mode-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+.onb-mode-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, transform 0.05s;
+}
+.onb-mode-btn:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.onb-mode-btn:active {
+  transform: scale(0.99);
+}
+.onb-mode-btn.is-active {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.onb-mode-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.onb-mode-sub {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Settings : select #set-mode */
+#set-mode {
+  font-size: 1rem;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  width: 100%;
+  max-width: 280px;
+}
+
 /* ───────── Header app ───────── */
 .app-header {
   height: var(--header-h);

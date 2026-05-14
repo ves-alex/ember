@@ -2,14 +2,16 @@
 -- À exécuter une fois dans Supabase Studio → SQL Editor sur le projet ember.
 -- Pré-requis : extension pgcrypto disponible (Supabase l'active par défaut).
 
--- 1) cigarettes : une ligne par clope fumée
+-- 1) cigarettes : une ligne par clope fumée OU pastille prise (selon tracking_mode)
 create table public.cigarettes (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  smoked_at   timestamptz not null default now(),
-  trigger_tag text,                       -- 'stress' | 'cafe' | 'social' | 'ennui' | 'repas' | 'autre' | null
-  note        text,
-  created_at  timestamptz not null default now()
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  smoked_at     timestamptz not null default now(),
+  trigger_tag   text,                       -- 'stress' | 'cafe' | 'social' | 'ennui' | 'repas' | 'autre' | null
+  note          text,
+  tracking_mode text not null default 'cigarette'
+                check (tracking_mode in ('cigarette', 'pastille')),
+  created_at    timestamptz not null default now()
 );
 
 create index cigarettes_user_smoked_idx
@@ -24,6 +26,8 @@ create table public.quit_plan (
   price_per_pack       numeric(6,2) default 12.50,
   cigs_per_pack        int default 20,
   start_date           date not null default current_date,
+  tracking_mode        text not null default 'cigarette'
+                       check (tracking_mode in ('cigarette', 'pastille')),
   updated_at           timestamptz not null default now()
 );
 

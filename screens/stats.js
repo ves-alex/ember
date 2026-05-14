@@ -7,8 +7,14 @@
 import { state, TRIGGER_LABELS } from "../state.js";
 import { $, pad2, startOfDay, daysBetween } from "../utils.js";
 import { effectiveQuota } from "./main.js";
+import { getLabels } from "../labels.js";
 
 export function renderStats() {
+  // Masque ou révèle la section "Économies" selon le mode courant. En mode
+  // pastille, les substituts coûtent → afficher des "économies" serait trompeur.
+  const savingsSection = document.querySelector(".stat-savings");
+  if (savingsSection) savingsSection.hidden = !getLabels().showSavings;
+
   renderWeekly();
   renderDailyChart();
   renderHeatmap();
@@ -204,7 +210,7 @@ function renderHeatmap() {
       const cell = document.createElement("div");
       cell.className = "heatmap-cell";
       cell.dataset.level = level;
-      cell.title = dayLabels[d] + " " + h + "h : " + v + " clope" + (v > 1 ? "s" : "");
+      cell.title = getLabels().heatmapCellTitle(dayLabels[d], h, v);
       wrap.appendChild(cell);
     }
   }
@@ -253,6 +259,9 @@ function renderTriggerList() {
 // ─── Économies ───
 function renderSavings() {
   if (!state.plan) return;
+  // Section masquée par renderStats() en mode pastille — on no-op aussi ici
+  // au cas où la fonction serait appelée directement ailleurs.
+  if (!getLabels().showSavings) return;
   const pricePerCig = (state.plan.price_per_pack || 0) / (state.plan.cigs_per_pack || 20);
   const start = startDate();
   const days = daysSinceStart();
@@ -275,8 +284,7 @@ function renderSavings() {
   $("#savings-detail").textContent =
     "Depuis le " + startStr + " (" + days + " jour" + (days > 1 ? "s" : "") + ").";
   $("#savings-avoided").textContent =
-    avoided + " clope" + (avoided > 1 ? "s" : "") + " évitée" + (avoided > 1 ? "s" : "") +
-    " par rapport à ta baseline de " + state.plan.daily_quota + "/j.";
+    getLabels().savingsAvoided(avoided, state.plan.daily_quota);
 }
 
 // ─── Bilan cumulé depuis le début ───
@@ -290,9 +298,7 @@ function renderCumul() {
   const lineEl = $("#cumul-line");
   const detailEl = $("#cumul-detail");
 
-  lineEl.innerHTML =
-    "J+" + days + " · " + real + " clope" + (real !== 1 ? "s" : "") + " fumée" + (real !== 1 ? "s" : "") +
-    " sur un quota cumulé de " + baseline + ".";
+  lineEl.textContent = getLabels().cumulLine(days, real, baseline);
   if (diff > 0) {
     detailEl.innerHTML = "Tu es <strong style='color:var(--success)'>" + diff +
       "</strong> en dessous de l'objectif. Continue.";
