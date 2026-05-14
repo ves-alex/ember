@@ -161,25 +161,35 @@ p {
   .ember-logo-breathing { animation: none; }
 }
 
-/* ───── Résolution du logo splash : eau qui remplit le cercle ─────
-   Quand le splash bascule vers l'écran main, transitions.js ajoute
-   .is-resolved. Le rectangle .ember-logo-water (clip-pathé au cercle)
-   est translaté en bas par défaut (translateY = sa hauteur). Quand
-   .is-resolved est ajouté, il remonte à translateY(0) → l'eau monte
-   et recouvre le yin-yang en arrière-plan. Couleur = var(--accent),
-   donc ambre en mode cigarette, vert tilleul en mode pastille. */
-.ember-logo .ember-logo-water {
-  /* fill-box met l'origine de transform au coin du rect lui-même, sinon
-     le translate est calculé par rapport au SVG entier et peut donner
-     un comportement imprévisible sur Safari iOS. */
-  transform-box: fill-box;
-  transform-origin: 0 0;
-  transform: translateY(440px);
-  transition: transform 850ms cubic-bezier(0.45, 0.05, 0.25, 1);
-  pointer-events: none;
+/* ───── Résolution du logo splash : path morphing croissant → cercle ─────
+   Quand transitions.js ajoute .is-resolved, l'attribut `d` du croissant
+   correspondant au mode courant transite vers un cercle complet via CSS
+   `transition: d`. L'animation est fluide car l'interpolation se fait sur
+   les valeurs numériques des arcs (rayons 110 → 220). La braise centrale
+   fade out en parallèle puisqu'elle sera de toute façon recouverte.
+   Couleur de la couleur du mode : déjà fixée sur le path actif. */
+.ember-logo .yy-yin,
+.ember-logo .yy-yang {
+  transition: d 1100ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.ember-logo.is-resolved .ember-logo-water {
-  transform: translateY(0);
+.ember-logo .yy-ember {
+  transition: opacity 700ms ease-out;
+}
+
+/* Mode cigarette (default) : le yin (ambre) grandit pour remplir tout le cercle */
+.ember-logo.is-resolved .yy-yin {
+  d: path("M 256,36 A 220,220 0 0,0 256,476 A 220,220 0 0,1 256,256 A 220,220 0 0,0 256,36 Z");
+}
+.ember-logo.is-resolved .yy-ember {
+  opacity: 0;
+}
+
+/* Mode pastille : c'est le yang (vert) qui grandit ; le yin reste un croissant */
+body[data-mode="pastille"] .ember-logo.is-resolved .yy-yin {
+  d: path("M 256,36 A 220,220 0 0,0 256,476 A 110,110 0 0,1 256,256 A 110,110 0 0,0 256,36 Z");
+}
+body[data-mode="pastille"] .ember-logo.is-resolved .yy-yang {
+  d: path("M 256,36 A 220,220 0 0,1 256,476 A 220,220 0 0,0 256,256 A 220,220 0 0,1 256,36 Z");
 }
 
 /* ───── Transition splash → écran suivant (wind-up + release) ─────
