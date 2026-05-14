@@ -161,35 +161,19 @@ p {
   .ember-logo-breathing { animation: none; }
 }
 
-/* ───── Résolution du logo splash : path morphing croissant → cercle ─────
-   Quand transitions.js ajoute .is-resolved, l'attribut `d` du croissant
-   correspondant au mode courant transite vers un cercle complet via CSS
-   `transition: d`. L'animation est fluide car l'interpolation se fait sur
-   les valeurs numériques des arcs (rayons 110 → 220). La braise centrale
-   fade out en parallèle puisqu'elle sera de toute façon recouverte.
-   Couleur de la couleur du mode : déjà fixée sur le path actif. */
-.ember-logo .yy-yin,
-.ember-logo .yy-yang {
-  transition: d 1100ms cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* ───── Résolution du logo splash : path morphing en JS ─────
+   Le morphing croissant → cercle plein est piloté frame par frame dans
+   transitions.js (fonction morphCroissantToCircle). On utilise pas de CSS
+   transition sur `d:` ici parce que l'interpolation CSS des arcs SVG ne
+   donne pas un vrai cercle complet (les rayons interpolent mais les arcs
+   restent dégénérés). La fonction JS sample 64 points le long du path
+   actif et le long d'un cercle de référence, puis interpole linéairement.
+   La braise centrale fade out en parallèle via cette même classe. */
 .ember-logo .yy-ember {
-  transition: opacity 700ms ease-out;
-}
-
-/* Mode cigarette (default) : le yin (ambre) grandit pour remplir tout le cercle */
-.ember-logo.is-resolved .yy-yin {
-  d: path("M 256,36 A 220,220 0 0,0 256,476 A 220,220 0 0,1 256,256 A 220,220 0 0,0 256,36 Z");
+  transition: opacity 600ms ease-out;
 }
 .ember-logo.is-resolved .yy-ember {
   opacity: 0;
-}
-
-/* Mode pastille : c'est le yang (vert) qui grandit ; le yin reste un croissant */
-body[data-mode="pastille"] .ember-logo.is-resolved .yy-yin {
-  d: path("M 256,36 A 220,220 0 0,0 256,476 A 110,110 0 0,1 256,256 A 110,110 0 0,0 256,36 Z");
-}
-body[data-mode="pastille"] .ember-logo.is-resolved .yy-yang {
-  d: path("M 256,36 A 220,220 0 0,1 256,476 A 220,220 0 0,0 256,256 A 220,220 0 0,1 256,36 Z");
 }
 
 /* ───── Transition splash → écran suivant (wind-up + release) ─────

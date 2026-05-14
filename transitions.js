@@ -2,6 +2,60 @@
 
 import { $, $$ } from "./utils.js";
 
+// ───────── Path morphing croissant → cercle plein ─────────
+// Le croissant actif (yin ou yang selon le mode) est animé vers un cercle
+// complet de rayon 220 centré (256, 256). On sample N points équidistants
+// le long du path actuel (via SVGGeometryElement.getPointAtLength) et N
+// points sur le cercle cible, puis on interpole frame par frame.
+// La direction du cercle cible doit matcher celle du croissant : le yin
+// est traversé en CCW visuel (sweep=0,1,0), le yang en CW visuel (sweep=1,0,1).
+const MORPH_POINTS = 64;
+
+function generateCirclePoints(direction) {
+  // direction = "ccw" pour le yin, "cw" pour le yang. Start at top (256, 36).
+  const cx = 256, cy = 256, R = 220;
+  const sign = direction === "cw" ? 1 : -1;     // CCW visuel = math CW = angle décroissant
+  const startA = -Math.PI / 2;                  // top en coords SVG (y vers le bas)
+  const out = [];
+  for (let i = 0; i < MORPH_POINTS; i++) {
+    const a = startA + sign * (2 * Math.PI * i / MORPH_POINTS);
+    out.push({ x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) });
+  }
+  return out;
+}
+
+function pointsToPath(pts) {
+  let d = "M " + pts[0].x.toFixed(1) + "," + pts[0].y.toFixed(1);
+  for (let i = 1; i < pts.length; i++) d += " L " + pts[i].x.toFixed(1) + "," + pts[i].y.toFixed(1);
+  return d + " Z";
+}
+
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+export function morphCroissantToCircle(pathEl, direction, duration) {
+  const length = pathEl.getTotalLength();
+  const startPts = [];
+  for (let i = 0; i < MORPH_POINTS; i++) {
+    const p = pathEl.getPointAtLength((length * i) / MORPH_POINTS);
+    startPts.push({ x: p.x, y: p.y });
+  }
+  const endPts = generateCirclePoints(direction);
+  const startTime = performance.now();
+  function frame(now) {
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = easeInOut(t);
+    const current = startPts.map((p, i) => ({
+      x: p.x + (endPts[i].x - p.x) * eased,
+      y: p.y + (endPts[i].y - p.y) * eased,
+    }));
+    pathEl.setAttribute("d", pointsToPath(current));
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
 export function showScreen(id) {
   $$(".screen").forEach((el) => el.classList.toggle("active", el.id === id));
   const showNav = ["screen-main", "screen-stats", "screen-settings"].includes(id);
@@ -58,12 +112,21 @@ async function transitionSplashToButton() {
   const text = splash.querySelector(".loading-text");
   const btn = document.getElementById("btn-plus-one");
 
-  // 0. Résout le logo yin-yang → cercle monochrome de la couleur du mode
-  //    courant. La transition CSS (450 ms) se joue en parallèle de l'envol
-  //    FLIP qui suit — au moment où le logo se pose sur le bouton, il est
-  //    déjà un cercle uni de la bonne couleur, qui épouse parfaitement le
-  //    bouton +1 (lui aussi colorié via var(--accent)).
-  if (logo) logo.classList.add("is-resolved");
+  // 0. Résout le croissant actif (selon mode) en cercle plein de la couleur
+  //    du mode. Le morphing se fait frame par frame en JS (interpolation des
+  //    points le long de la courbe), garantissant un VRAI cercle plein à
+  //    l'arrivée. La couleur du croissant est déjà fixe (ambre pour yin,
+  //    vert pour yang), donc le cercle final est de la bonne couleur sans
+  //    autre intervention. Le croissant inactif et la braise sont recouverts
+  //    visuellement — la braise fade out aussi via la classe .is-resolved (CSS).
+  if (logo) {
+    logo.classList.add("is-resolved");
+    const mode = document.body.dataset.mode === "pastille" ? "pastille" : "cigarette";
+    const activeSel = mode === "pastille" ? ".yy-yang" : ".yy-yin";
+    const direction = mode === "pastille" ? "cw" : "ccw";
+    const activePath = logo.querySelector(activeSel);
+    if (activePath) morphCroissantToCircle(activePath, direction, 900);
+  }
 
   // 1. Active screen-main + le positionne en fixed pour qu'il se superpose
   //    au splash (sinon il se placerait en block flow EN-DESSOUS du splash,
