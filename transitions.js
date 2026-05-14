@@ -192,13 +192,12 @@ async function transitionSplashToButton() {
   // 6. Vol du logo vers le bouton, puis "embrasement" jusqu'à épouser le
   //    contour du cercle.
   //
-  //    Géométrie : dans le SVG du logo (viewBox 512), le disque ambre
-  //    saturé est un cercle r=110, soit ~43% de la viewBox. Pour que
-  //    visuellement ce disque coïncide avec le bouton (taille toRect),
-  //    le logo entier doit faire toRect.width / 0.43 ≈ 2.3 × toRect.width.
-  //    Le halo (cercle r=220, presque toute la viewBox) déborde alors
-  //    autour du bouton — effet "lueur" voulu.
-  const embraceFactor = 2.3;
+  //    Géométrie : depuis qu'on a basculé sur un yin-yang qui se résout en
+  //    cercle plein (rayon 220 sur viewBox 512), le path "solide" final
+  //    occupe ~86 % du viewBox (440/512). Pour que ce cercle coïncide pile
+  //    avec le bouton, le logo entier doit faire toRect.width / 0.86 ≈
+  //    1.16 × toRect.width. Pas de halo qui déborde avec ce nouveau logo.
+  const embraceFactor = 1.16;
   const finalW = toRect.width * embraceFactor;
   const finalH = toRect.height * embraceFactor;
   const finalLeft = (toRect.left + toRect.width / 2) - finalW / 2;
