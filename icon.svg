@@ -1,36 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <!-- Halo extérieur : ambre transparent qui s'estompe en s'éloignant du centre -->
-    <radialGradient id="emberHalo" cx="256" cy="256" r="220" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#ff8c42" stop-opacity="0.55"/>
-      <stop offset="35%"  stop-color="#ff8c42" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#ff8c42" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Disque braise : centre incandescent (presque blanc-jaune) → ambre profond aux bords -->
-    <radialGradient id="emberCore" cx="256" cy="252" r="110" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#ffe2b5"/>
-      <stop offset="20%"  stop-color="#ffc080"/>
-      <stop offset="55%"  stop-color="#ff8c42"/>
-      <stop offset="100%" stop-color="#c66a31"/>
-    </radialGradient>
-
-    <!-- Surbrillance subtile en haut-gauche du disque pour effet 3D / braise vivante -->
-    <radialGradient id="emberHilight" cx="232" cy="228" r="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#fff0d4" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#fff0d4" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-
-  <!-- Fond graphite arrondi (cohérent Nudge) -->
+  <!-- Fond graphite arrondi : il sera visible dans la zone "ouverte" en bas
+       du logo, formant le cercle sombre que cherchait Alex. -->
   <rect width="512" height="512" rx="100" fill="#15171a"/>
 
-  <!-- Halo qui rayonne autour du disque -->
-  <circle cx="256" cy="256" r="220" fill="url(#emberHalo)"/>
+  <!-- Logo "deux moitiés ouvertes" : un croissant ambre à gauche-haut,
+       un croissant vert à droite-haut, qui laissent voir le fond graphite
+       dans le bas via une découpe circulaire. Au centre du fond, l'œil
+       ambre vient comme une braise persistante.
+       Centre (256, 256), grand R=180, petits r=90. -->
 
-  <!-- Disque braise central -->
-  <circle cx="256" cy="256" r="110" fill="url(#emberCore)"/>
+  <!-- Croissant ambre (gauche, bulb en haut) -->
+  <path d="M 256,76 A 180,180 0 0,0 256,436 A 90,90 0 0,1 256,256 A 90,90 0 0,0 256,76 Z"
+        fill="#ff8c42"/>
 
-  <!-- Reflet/surbrillance -->
-  <circle cx="232" cy="228" r="40" fill="url(#emberHilight)"/>
+  <!-- Croissant vert (droite, bulb en haut) -->
+  <path d="M 256,76 A 180,180 0 0,1 256,436 A 90,90 0 0,0 256,256 A 90,90 0 0,1 256,76 Z"
+        fill="#6abf69"/>
+
+  <!-- Petite braise ambre au centre du cercle sombre en bas -->
+  <circle cx="256" cy="346" r="22" fill="#ff8c42"/>
 </svg>
