@@ -113,19 +113,32 @@ async function transitionSplashToButton() {
   const btn = document.getElementById("btn-plus-one");
 
   // 0. Résout le croissant actif (selon mode) en cercle plein de la couleur
-  //    du mode. Le morphing se fait frame par frame en JS (interpolation des
-  //    points le long de la courbe), garantissant un VRAI cercle plein à
-  //    l'arrivée. La couleur du croissant est déjà fixe (ambre pour yin,
-  //    vert pour yang), donc le cercle final est de la bonne couleur sans
-  //    autre intervention. Le croissant inactif et la braise sont recouverts
-  //    visuellement — la braise fade out aussi via la classe .is-resolved (CSS).
+  //    du mode. Le morphing se fait frame par frame en JS, garantissant un
+  //    VRAI cercle plein à l'arrivée. La couleur du croissant est déjà fixe
+  //    (ambre pour yin, vert pour yang), donc le cercle final est de la bonne
+  //    couleur. La braise fade out via la classe .is-resolved (CSS).
+  //
+  //    Important : on déplace le croissant actif EN FIN de SVG (= z-order
+  //    au-dessus) AVANT le morphing pour qu'il soit rendu PAR-DESSUS l'autre.
+  //    Sinon, en mode cigarette, le yin (qui croît) reste masqué à droite
+  //    par le yang qui était initialement rendu après lui. On fade aussi
+  //    le croissant inactif en parallèle pour qu'il disparaisse proprement.
   if (logo) {
     logo.classList.add("is-resolved");
     const mode = document.body.dataset.mode === "pastille" ? "pastille" : "cigarette";
     const activeSel = mode === "pastille" ? ".yy-yang" : ".yy-yin";
+    const inactiveSel = mode === "pastille" ? ".yy-yin" : ".yy-yang";
     const direction = mode === "pastille" ? "cw" : "ccw";
     const activePath = logo.querySelector(activeSel);
-    if (activePath) morphCroissantToCircle(activePath, direction, 900);
+    const inactivePath = logo.querySelector(inactiveSel);
+    if (inactivePath) {
+      inactivePath.style.transition = "opacity 400ms ease-out";
+      inactivePath.style.opacity = "0";
+    }
+    if (activePath) {
+      activePath.parentNode.appendChild(activePath); // z-order : passe au-dessus
+      morphCroissantToCircle(activePath, direction, 900);
+    }
   }
 
   // 1. Active screen-main + le positionne en fixed pour qu'il se superpose
