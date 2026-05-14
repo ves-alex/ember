@@ -207,16 +207,6 @@ function applySavedMode() {
 }
 applySavedMode();
 
-// Résolution du logo splash : après ~600 ms, on ajoute .is-resolved pour
-// déclencher la transition yin-yang → monochrome (couleur du mode courant).
-// 600 ms = ~ 1/4 de cycle de respiration, le temps que l'œil enregistre le
-// yin-yang avant la résolution.
-function resolveSplashLogo() {
-  const logo = document.querySelector("#screen-loading .ember-logo");
-  if (logo) logo.classList.add("is-resolved");
-}
-setTimeout(resolveSplashLogo, 600);
-
 // Démarrage. Les modules sont chargés via <script type="module">,
 // l'évaluation est différée par défaut — quand on arrive ici, le DOM est
 // soit prêt soit en cours de parsing. On gère les deux cas par sûreté.

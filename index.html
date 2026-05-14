@@ -15,15 +15,10 @@
 </head>
 <body>
 
-  <!-- Splash de chargement -->
-  <!--
-    Logo en deux états superposés :
-      - .ember-logo-yinyang : visible au démarrage, montre les 2 couleurs des modes
-        (ambre = cigarette, vert tilleul = pastille) en forme yin-yang classique
-      - .ember-logo-mono    : caché initialement, fade-in au moment de la résolution
-        pour montrer la couleur du mode courant (var(--accent))
-    La transition est déclenchée par .is-resolved (ajoutée par app.js après ~600 ms).
-  -->
+  <!-- Splash de chargement : logo braise (3 cercles concentriques) qui respire.
+       Les stop-color utilisent des CSS vars (--accent, --logo-warm-*) pour
+       basculer entre ambre (mode cigarette) et vert tilleul (mode pastille).
+       La couleur est appliquée AVANT le splash via data-mode sur <body>. -->
   <section id="screen-loading" class="screen active">
     <div class="loading-wrap">
       <svg class="ember-logo ember-logo-breathing" viewBox="0 0 512 512" aria-hidden="true">
@@ -44,47 +39,38 @@
             <stop offset="100%" stop-color="var(--logo-glow)" stop-opacity="0"/>
           </radialGradient>
         </defs>
-
-        <!-- État résolu : cercles concentriques (halo + core + highlight) -->
-        <g class="ember-logo-mono">
-          <circle cx="256" cy="256" r="220" fill="url(#splash-halo)"/>
-          <circle cx="256" cy="256" r="110" fill="url(#splash-core)"/>
-          <circle cx="232" cy="228" r="40" fill="url(#splash-hilight)"/>
-        </g>
-
-        <!-- État initial : yin-yang classique (ambre bulb haut, vert bulb bas).
-             Approche cercle plein + path par-dessus (canonique Wikipedia), beaucoup
-             plus robuste que 2 paths séparés où les sweep-flags sont contre-intuitifs.
-             Centre (256, 256), grand R=220, petits r=110. -->
-        <g class="ember-logo-yinyang">
-          <circle class="yy-base" cx="256" cy="256" r="220" fill="var(--pastille-color)"/>
-          <path class="yy-overlay"
-                d="M 256,36
-                   A 110,110 0 0,1 256,256
-                   A 110,110 0 0,0 256,476
-                   A 220,220 0 0,1 256,36 Z"
-                fill="var(--cigarette-color)"/>
-          <circle class="yy-eye-top" cx="256" cy="146" r="28" fill="var(--pastille-color)"/>
-          <circle class="yy-eye-bottom" cx="256" cy="366" r="28" fill="var(--cigarette-color)"/>
-        </g>
+        <circle cx="256" cy="256" r="220" fill="url(#splash-halo)"/>
+        <circle cx="256" cy="256" r="110" fill="url(#splash-core)"/>
+        <circle cx="232" cy="228" r="40" fill="url(#splash-hilight)"/>
       </svg>
       <p class="loading-text">Ember</p>
     </div>
   </section>
 
-  <!-- Écran d'authentification : logo en yin-yang fixe (mode pas encore choisi
-       tant que l'user n'est pas connecté et n'a pas fait son onboarding) -->
+  <!-- Écran d'authentification : logo braise (s'adapte au mode courant via CSS vars) -->
   <section id="screen-auth" class="screen">
     <div class="auth-wrap">
       <svg class="ember-logo" viewBox="0 0 512 512" aria-hidden="true">
-        <circle cx="256" cy="256" r="220" fill="var(--pastille-color)"/>
-        <path d="M 256,36
-                 A 110,110 0 0,1 256,256
-                 A 110,110 0 0,0 256,476
-                 A 220,220 0 0,1 256,36 Z"
-              fill="var(--cigarette-color)"/>
-        <circle cx="256" cy="146" r="28" fill="var(--pastille-color)"/>
-        <circle cx="256" cy="366" r="28" fill="var(--cigarette-color)"/>
+        <defs>
+          <radialGradient id="auth-halo" cx="256" cy="256" r="220" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.55"/>
+            <stop offset="35%" stop-color="var(--accent)" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="auth-core" cx="256" cy="252" r="110" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="var(--logo-warm-light)"/>
+            <stop offset="20%" stop-color="var(--logo-warm-mid)"/>
+            <stop offset="55%" stop-color="var(--accent)"/>
+            <stop offset="100%" stop-color="var(--accent-dim)"/>
+          </radialGradient>
+          <radialGradient id="auth-hilight" cx="232" cy="228" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="var(--logo-glow)" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="var(--logo-glow)" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="256" cy="256" r="220" fill="url(#auth-halo)"/>
+        <circle cx="256" cy="256" r="110" fill="url(#auth-core)"/>
+        <circle cx="232" cy="228" r="40" fill="url(#auth-hilight)"/>
       </svg>
       <h1>Ember</h1>
       <p class="tagline">Reprendre la main, une clope à la fois.</p>
@@ -394,7 +380,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Logique appli (modules ES6 — voir app.js + state/utils/supabase/db/transitions/screens) -->
-  <script type="module" src="app.js?v=19"></script>
+  <script type="module" src="app.js?v=20"></script>
 
   <!-- Service worker + auto-reload sur nouvelle version -->
   <script>
