@@ -12,6 +12,10 @@
   --accent-dim: #c66a31;
   --accent-rgb: 255, 140, 66;
   --accent-glow: rgba(var(--accent-rgb), 0.25);
+  /* Couleurs fixes des 2 modes — utilisées dans le yin-yang du splash
+     (qui montre toujours les 2 couleurs, quel que soit le mode courant). */
+  --cigarette-color: #ff8c42;
+  --pastille-color: #6abf69;
   /* Stops internes des SVG logos (splash + auth) — éclaircissements ambrés */
   --logo-warm-light: #ffe2b5;
   --logo-warm-mid: #ffc080;
@@ -160,6 +164,23 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .ember-logo-breathing { animation: none; }
 }
+
+/* ───── Résolution yin-yang → monochrome (au démarrage) ─────
+   Au boot, le logo splash est en yin-yang (ambre + vert tilleul). Après
+   ~600 ms, app.js ajoute .is-resolved → le yin-yang fade-out et le mono
+   correspondant au mode courant (via var(--accent)) fade-in. Effet :
+   "Ember s'incarne dans ton mode". */
+.ember-logo .ember-logo-mono {
+  opacity: 0;
+  transition: opacity 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ember-logo .ember-logo-yinyang {
+  opacity: 1;
+  transition: opacity 900ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center center;
+}
+.ember-logo.is-resolved .ember-logo-mono { opacity: 1; }
+.ember-logo.is-resolved .ember-logo-yinyang { opacity: 0; }
 
 /* ───── Transition splash → écran suivant (wind-up + release) ─────
    Phase 1 (0-25%) : le logo se contracte légèrement (inspiration finale)

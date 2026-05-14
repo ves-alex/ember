@@ -197,11 +197,25 @@ function wireEvents() {
 // <body> AVANT le splash. Sans ça, un user pastille verrait un flash ambre
 // pendant ~1,9s (le hold splash) avant que applyModeToUI() bascule en vert.
 // Au tout premier lancement il n'y a rien en localStorage, on garde le défaut
-// CSS (ambre).
-const savedMode = localStorage.getItem("ember-mode");
-if (savedMode === "pastille" || savedMode === "cigarette") {
-  document.body.dataset.mode = savedMode;
+// CSS (ambre). Protégé pour le cas (théorique) où <body> ne serait pas
+// encore parsé au moment où ce module s'évalue.
+function applySavedMode() {
+  const savedMode = localStorage.getItem("ember-mode");
+  if ((savedMode === "pastille" || savedMode === "cigarette") && document.body) {
+    document.body.dataset.mode = savedMode;
+  }
 }
+applySavedMode();
+
+// Résolution du logo splash : après ~600 ms, on ajoute .is-resolved pour
+// déclencher la transition yin-yang → monochrome (couleur du mode courant).
+// 600 ms = ~ 1/4 de cycle de respiration, le temps que l'œil enregistre le
+// yin-yang avant la résolution.
+function resolveSplashLogo() {
+  const logo = document.querySelector("#screen-loading .ember-logo");
+  if (logo) logo.classList.add("is-resolved");
+}
+setTimeout(resolveSplashLogo, 600);
 
 // Démarrage. Les modules sont chargés via <script type="module">,
 // l'évaluation est différée par défaut — quand on arrive ici, le DOM est
