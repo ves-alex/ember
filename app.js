@@ -29,6 +29,14 @@ import { getLabels } from "./labels.js";
 // settings qui change le mode, etc.).
 function applyModeToUI() {
   const L = getLabels();
+  const mode = (state.plan && state.plan.tracking_mode) || "cigarette";
+
+  // Thème CSS : un attribut data sur <body> que styles.css utilise pour
+  // override les CSS vars d'accent (--accent, --accent-dim, --logo-*).
+  // On le persiste aussi en localStorage pour pré-thèmer le splash dès
+  // le prochain chargement, avant que `state.plan` soit chargé depuis Supabase.
+  document.body.dataset.mode = mode;
+  localStorage.setItem("ember-mode", mode);
 
   // Bouton +1 dans l'écran main
   const plusLabelEl = $("#btn-plus-one .plus-label");
@@ -183,6 +191,16 @@ function wireEvents() {
     });
   });
   $("#btn-trigger-skip").addEventListener("click", closeTriggerModal);
+}
+
+// Pré-thème : on lit le mode persisté en localStorage et on l'applique sur
+// <body> AVANT le splash. Sans ça, un user pastille verrait un flash ambre
+// pendant ~1,9s (le hold splash) avant que applyModeToUI() bascule en vert.
+// Au tout premier lancement il n'y a rien en localStorage, on garde le défaut
+// CSS (ambre).
+const savedMode = localStorage.getItem("ember-mode");
+if (savedMode === "pastille" || savedMode === "cigarette") {
+  document.body.dataset.mode = savedMode;
 }
 
 // Démarrage. Les modules sont chargés via <script type="module">,

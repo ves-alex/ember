@@ -4,7 +4,7 @@
 // Chart.js est chargé en <script> classique dans index.html et expose
 // la classe globale `Chart` sur window — on l'utilise telle quelle ici.
 
-import { state, TRIGGER_LABELS } from "../state.js";
+import { state, TRIGGER_LABELS, getCurrentCigarettes } from "../state.js";
 import { $, pad2, startOfDay, daysBetween } from "../utils.js";
 import { effectiveQuota } from "./main.js";
 import { getLabels } from "../labels.js";
@@ -34,7 +34,7 @@ function dailyBuckets(nDays) {
     d.setDate(d.getDate() - i);
     out.push({ date: d, count: 0 });
   }
-  for (const c of state.cigarettes) {
+  for (const c of getCurrentCigarettes()) {
     const t = startOfDay(new Date(c.smoked_at));
     const diff = daysBetween(t, today);
     if (diff >= 0 && diff < nDays) out[nDays - 1 - diff].count++;
@@ -63,8 +63,9 @@ function renderWeekly() {
   const startPrev = new Date(startCur);
   startPrev.setDate(startPrev.getDate() - 7);
 
+  const myCigs = getCurrentCigarettes();
   const count = (from, to) =>
-    state.cigarettes.filter((c) => {
+    myCigs.filter((c) => {
       const t = new Date(c.smoked_at);
       return t >= from && t < to;
     }).length;
@@ -170,7 +171,8 @@ function renderHeatmap() {
   const wrap = $("#heatmap");
   const placeholder = $("#heatmap-placeholder");
   const days = daysSinceStart();
-  if (days < 7 || state.cigarettes.length < 5) {
+  const myCigs = getCurrentCigarettes();
+  if (days < 7 || myCigs.length < 5) {
     wrap.hidden = true;
     placeholder.hidden = false;
     return;
@@ -180,7 +182,7 @@ function renderHeatmap() {
   wrap.innerHTML = "";
 
   const buckets = Array.from({ length: 7 }, () => Array(24).fill(0));
-  for (const c of state.cigarettes) {
+  for (const c of myCigs) {
     const t = new Date(c.smoked_at);
     let dow = t.getDay() - 1;
     if (dow < 0) dow = 6;
@@ -220,7 +222,7 @@ function renderHeatmap() {
 // ─── Triggers ───
 function renderTriggerList() {
   const counts = {};
-  for (const c of state.cigarettes) {
+  for (const c of getCurrentCigarettes()) {
     if (c.trigger_tag) counts[c.trigger_tag] = (counts[c.trigger_tag] || 0) + 1;
   }
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -265,7 +267,7 @@ function renderSavings() {
   const pricePerCig = (state.plan.price_per_pack || 0) / (state.plan.cigs_per_pack || 20);
   const start = startDate();
   const days = daysSinceStart();
-  const real = state.cigarettes.filter((c) => new Date(c.smoked_at) >= start).length;
+  const real = getCurrentCigarettes().filter((c) => new Date(c.smoked_at) >= start).length;
   const baseline = state.plan.daily_quota * days;
   const avoided = Math.max(0, baseline - real);
   const savings = avoided * pricePerCig;
@@ -292,7 +294,7 @@ function renderCumul() {
   if (!state.plan) return;
   const start = startDate();
   const days = daysSinceStart();
-  const real = state.cigarettes.filter((c) => new Date(c.smoked_at) >= start).length;
+  const real = getCurrentCigarettes().filter((c) => new Date(c.smoked_at) >= start).length;
   const baseline = state.plan.daily_quota * days;
   const diff = baseline - real;
   const lineEl = $("#cumul-line");
@@ -317,12 +319,13 @@ function renderStreak() {
   const quota = effectiveQuota(state.plan);
 
   // Booléens "under_quota" par jour, du start à hier inclus.
+  const myCigs = getCurrentCigarettes();
   const flags = [];
   let day = new Date(start);
   while (day < today) {
     const next = new Date(day);
     next.setDate(next.getDate() + 1);
-    const count = state.cigarettes.filter((c) => {
+    const count = myCigs.filter((c) => {
       const t = new Date(c.smoked_at);
       return t >= day && t < next;
     }).length;

@@ -44,9 +44,19 @@ export const TRIGGER_LABELS = {
 export const state = {
   user: null,
   plan: null,
-  cigarettes: [],        // 30 derniers jours
+  cigarettes: [],        // 30 derniers jours, TOUS modes confondus
   lastCigaretteId: null,
   delayTimer: null,
   chartInstance: null,
   chartRange: 14,        // 7 | 14 | 30 jours visibles
 };
+
+// Retourne uniquement les entries du mode courant. Les renders consomment
+// ce filtré au lieu de `state.cigarettes` direct, pour isoler les deux modes
+// (cigarette / pastille) : chaque mode son compteur, son historique, ses
+// stats. La colonne `tracking_mode` sur la table `cigarettes` est servie
+// par `loadCigarettes30d()` et injectée par `insertCigarette()`.
+export function getCurrentCigarettes() {
+  const mode = (state.plan && state.plan.tracking_mode) || "cigarette";
+  return state.cigarettes.filter((c) => (c.tracking_mode || "cigarette") === mode);
+}

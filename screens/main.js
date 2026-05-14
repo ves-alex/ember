@@ -1,7 +1,7 @@
 // Écran principal : compteur du jour, bouton +1, délai, chips,
 // et les deux modals (confirmation bypass / sélection trigger).
 
-import { state } from "../state.js";
+import { state, getCurrentCigarettes } from "../state.js";
 import {
   $, $$, pad2, fmtTime, fmtMinSec, fmtDateFr, startOfDay, daysBetween,
 } from "../utils.js";
@@ -21,7 +21,8 @@ export function renderMain() {
   $("#header-date").textContent = fmtDateFr(now);
 
   const today = startOfDay(now);
-  const todayCigs = state.cigarettes.filter((c) => new Date(c.smoked_at) >= today);
+  const myCigs = getCurrentCigarettes();
+  const todayCigs = myCigs.filter((c) => new Date(c.smoked_at) >= today);
   const quota = effectiveQuota(state.plan);
 
   $("#counter-value").textContent = todayCigs.length;
@@ -44,12 +45,14 @@ export function renderMain() {
   if (plusLabelEl) plusLabelEl.textContent = L.plusButtonLabel;
   $("#btn-plus-one").setAttribute("aria-label", L.plusAriaLabel);
 
-  const last = state.cigarettes[0];
+  // myCigs est trié par smoked_at desc (cf. loadCigarettes30d), donc [0]
+  // est bien la dernière entrée du mode courant.
+  const last = myCigs[0];
   state.lastCigaretteId = last ? last.id : null;
   updateDelayDisplay(now);
 
   $("#chip-avg-interval").textContent = computeAvgInterval(todayCigs);
-  $("#chip-yesterday").textContent = computeYesterdayCount(state.cigarettes);
+  $("#chip-yesterday").textContent = computeYesterdayCount(myCigs);
   $("#chip-last").textContent = last ? fmtTime(new Date(last.smoked_at)) : "—";
 }
 
@@ -76,10 +79,11 @@ function computeYesterdayCount(allCigs) {
 }
 
 function updateDelayDisplay(now) {
-  const last = state.cigarettes[0];
+  const myCigs = getCurrentCigarettes();
+  const last = myCigs[0];
   const minDelay = (state.plan && state.plan.min_delay_minutes) || 60;
   const btn = $("#btn-plus-one");
-  const todayCigs = state.cigarettes.filter((c) => new Date(c.smoked_at) >= startOfDay(now));
+  const todayCigs = myCigs.filter((c) => new Date(c.smoked_at) >= startOfDay(now));
   const quota = effectiveQuota(state.plan);
   const overQuota = todayCigs.length >= quota;
 
@@ -118,9 +122,10 @@ export function startDelayTimer() {
 
 export async function handlePlusOne() {
   const now = new Date();
-  const last = state.cigarettes[0];
+  const myCigs = getCurrentCigarettes();
+  const last = myCigs[0];
   const minDelay = (state.plan && state.plan.min_delay_minutes) || 60;
-  const todayCount = state.cigarettes.filter((c) => new Date(c.smoked_at) >= startOfDay(now)).length;
+  const todayCount = myCigs.filter((c) => new Date(c.smoked_at) >= startOfDay(now)).length;
   const quota = effectiveQuota(state.plan);
 
   const L = getLabels();

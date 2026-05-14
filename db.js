@@ -21,7 +21,7 @@ export async function loadCigarettes30d() {
   const { data, error } = await restRequest(
     "/cigarettes?user_id=eq." + state.user.id +
     "&smoked_at=gte." + encodeURIComponent(isoSince) +
-    "&select=id,smoked_at,trigger_tag,note&order=smoked_at.desc"
+    "&select=id,smoked_at,trigger_tag,note,tracking_mode&order=smoked_at.desc"
   );
   if (error) {
     console.error("loadCigarettes30d", error);
@@ -31,7 +31,14 @@ export async function loadCigarettes30d() {
 }
 
 export async function insertCigarette() {
-  const row = { user_id: state.user.id, smoked_at: new Date().toISOString() };
+  // tracking_mode tagué sur l'INSERT pour préserver l'historique si l'user
+  // switche de mode plus tard. Le filtrage au render se base sur ce champ.
+  const mode = (state.plan && state.plan.tracking_mode) || "cigarette";
+  const row = {
+    user_id: state.user.id,
+    smoked_at: new Date().toISOString(),
+    tracking_mode: mode,
+  };
   const { data, error } = await restRequest("/cigarettes", {
     method: "POST",
     headers: { Prefer: "return=representation" },
