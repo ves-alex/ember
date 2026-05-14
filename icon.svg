@@ -1,36 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <!-- Halo extérieur : ambre transparent qui s'estompe en s'éloignant du centre -->
-    <radialGradient id="emberHalo" cx="256" cy="256" r="220" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#ff8c42" stop-opacity="0.55"/>
-      <stop offset="35%"  stop-color="#ff8c42" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#ff8c42" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Disque braise : centre incandescent (presque blanc-jaune) → ambre profond aux bords -->
-    <radialGradient id="emberCore" cx="256" cy="252" r="110" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#ffe2b5"/>
-      <stop offset="20%"  stop-color="#ffc080"/>
-      <stop offset="55%"  stop-color="#ff8c42"/>
-      <stop offset="100%" stop-color="#c66a31"/>
-    </radialGradient>
-
-    <!-- Surbrillance subtile en haut-gauche du disque pour effet 3D / braise vivante -->
-    <radialGradient id="emberHilight" cx="232" cy="228" r="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#fff0d4" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#fff0d4" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-
-  <!-- Fond graphite arrondi (cohérent Nudge) -->
+  <!-- Fond graphite arrondi (cohérent Nudge + iOS PWA icon) -->
   <rect width="512" height="512" rx="100" fill="#15171a"/>
 
-  <!-- Halo qui rayonne autour du disque -->
-  <circle cx="256" cy="256" r="220" fill="url(#emberHalo)"/>
+  <!-- Yin-yang : ambre (cigarette, bulb en haut) + vert tilleul (pastille,
+       bulb en bas). Représente les 2 modes possibles dès l'icône.
+       Paths canoniques adaptés de Wikipedia (yin-yang.svg) :
+       centre (256, 256), grand rayon 180, petits rayons 90.
+       Le grand cercle vert sert de fond, l'ambre est dessiné par-dessus. -->
 
-  <!-- Disque braise central -->
-  <circle cx="256" cy="256" r="110" fill="url(#emberCore)"/>
+  <!-- Moitié verte (yin classique = bulb en bas) : fond plein vert -->
+  <circle cx="256" cy="256" r="180" fill="#6abf69"/>
 
-  <!-- Reflet/surbrillance -->
-  <circle cx="232" cy="228" r="40" fill="url(#emberHilight)"/>
+  <!-- Moitié ambre (yang classique = bulb en haut) par-dessus -->
+  <path d="M 256,76
+           A 90,90 0 0,1 256,256
+           A 90,90 0 0,0 256,436
+           A 180,180 0 0,1 256,76 Z"
+        fill="#ff8c42"/>
+
+  <!-- Œil vert dans la bulb ambre (en haut) -->
+  <circle cx="256" cy="166" r="25" fill="#6abf69"/>
+
+  <!-- Œil ambre dans la bulb verte (en bas) -->
+  <circle cx="256" cy="346" r="25" fill="#ff8c42"/>
 </svg>

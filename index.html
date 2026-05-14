@@ -52,16 +52,20 @@
           <circle cx="232" cy="228" r="40" fill="url(#splash-hilight)"/>
         </g>
 
-        <!-- État initial : yin-yang classique (ambre + vert tilleul) -->
+        <!-- État initial : yin-yang classique (ambre bulb haut, vert bulb bas).
+             Approche cercle plein + path par-dessus (canonique Wikipedia), beaucoup
+             plus robuste que 2 paths séparés où les sweep-flags sont contre-intuitifs.
+             Centre (256, 256), grand R=220, petits r=110. -->
         <g class="ember-logo-yinyang">
-          <path class="yy-yin"
-                d="M 256,36 A 220,220 0 0,0 256,476 A 110,110 0 0,1 256,256 A 110,110 0 0,0 256,36 Z"
+          <circle class="yy-base" cx="256" cy="256" r="220" fill="var(--pastille-color)"/>
+          <path class="yy-overlay"
+                d="M 256,36
+                   A 110,110 0 0,1 256,256
+                   A 110,110 0 0,0 256,476
+                   A 220,220 0 0,1 256,36 Z"
                 fill="var(--cigarette-color)"/>
-          <path class="yy-yang"
-                d="M 256,36 A 220,220 0 0,1 256,476 A 110,110 0 0,0 256,256 A 110,110 0 0,1 256,36 Z"
-                fill="var(--pastille-color)"/>
-          <circle class="yy-eye-top" cx="256" cy="146" r="22" fill="var(--pastille-color)"/>
-          <circle class="yy-eye-bottom" cx="256" cy="366" r="22" fill="var(--cigarette-color)"/>
+          <circle class="yy-eye-top" cx="256" cy="146" r="28" fill="var(--pastille-color)"/>
+          <circle class="yy-eye-bottom" cx="256" cy="366" r="28" fill="var(--cigarette-color)"/>
         </g>
       </svg>
       <p class="loading-text">Ember</p>
@@ -73,12 +77,14 @@
   <section id="screen-auth" class="screen">
     <div class="auth-wrap">
       <svg class="ember-logo" viewBox="0 0 512 512" aria-hidden="true">
-        <path d="M 256,36 A 220,220 0 0,0 256,476 A 110,110 0 0,1 256,256 A 110,110 0 0,0 256,36 Z"
+        <circle cx="256" cy="256" r="220" fill="var(--pastille-color)"/>
+        <path d="M 256,36
+                 A 110,110 0 0,1 256,256
+                 A 110,110 0 0,0 256,476
+                 A 220,220 0 0,1 256,36 Z"
               fill="var(--cigarette-color)"/>
-        <path d="M 256,36 A 220,220 0 0,1 256,476 A 110,110 0 0,0 256,256 A 110,110 0 0,1 256,36 Z"
-              fill="var(--pastille-color)"/>
-        <circle cx="256" cy="146" r="22" fill="var(--pastille-color)"/>
-        <circle cx="256" cy="366" r="22" fill="var(--cigarette-color)"/>
+        <circle cx="256" cy="146" r="28" fill="var(--pastille-color)"/>
+        <circle cx="256" cy="366" r="28" fill="var(--cigarette-color)"/>
       </svg>
       <h1>Ember</h1>
       <p class="tagline">Reprendre la main, une clope à la fois.</p>
@@ -388,7 +394,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Logique appli (modules ES6 — voir app.js + state/utils/supabase/db/transitions/screens) -->
-  <script type="module" src="app.js?v=18"></script>
+  <script type="module" src="app.js?v=19"></script>
 
   <!-- Service worker + auto-reload sur nouvelle version -->
   <script>
