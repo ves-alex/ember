@@ -58,6 +58,13 @@ async function transitionSplashToButton() {
   const text = splash.querySelector(".loading-text");
   const btn = document.getElementById("btn-plus-one");
 
+  // 0. Résout le logo yin-yang → cercle monochrome de la couleur du mode
+  //    courant. La transition CSS (450 ms) se joue en parallèle de l'envol
+  //    FLIP qui suit — au moment où le logo se pose sur le bouton, il est
+  //    déjà un cercle uni de la bonne couleur, qui épouse parfaitement le
+  //    bouton +1 (lui aussi colorié via var(--accent)).
+  if (logo) logo.classList.add("is-resolved");
+
   // 1. Active screen-main + le positionne en fixed pour qu'il se superpose
   //    au splash (sinon il se placerait en block flow EN-DESSOUS du splash,
   //    et le bouton +1 mesurerait à y=1268 hors du viewport).
