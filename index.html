@@ -15,43 +15,24 @@
 </head>
 <body>
 
-  <!-- Splash de chargement : logo en 2 états superposés.
-       - .ember-logo-yinyang : visible au démarrage. Croissant ambre (cigarette)
-         à gauche, croissant vert (pastille) à droite, cercle sombre en bas
-         avec une petite braise ambre — montre les 2 modes possibles.
-       - .ember-logo-mono : caché initialement. Cercle monochrome de la
-         couleur du mode courant (var(--accent)). Apparaît au moment où le
-         logo s'envole vers le bouton +1 (déclenché par .is-resolved que
-         transitionSplashToButton ajoute), pour que le logo épouse le bouton. -->
+  <!-- Splash de chargement.
+       - Le yin-yang (2 croissants + braise) est visible en permanence.
+       - Quand le splash bascule vers l'écran main (transitionSplashToButton
+         ajoute .is-resolved), un rectangle de la couleur du mode (--accent)
+         monte du bas vers le haut, contraint par un clipPath circulaire,
+         pour remplir le cercle "comme de l'eau". À la fin de la montée,
+         le yin-yang est entièrement recouvert et le logo qui se pose sur
+         le bouton +1 est uni de la bonne couleur. -->
   <section id="screen-loading" class="screen active">
     <div class="loading-wrap">
       <svg class="ember-logo ember-logo-breathing" viewBox="0 0 512 512" aria-hidden="true">
         <defs>
-          <radialGradient id="splash-halo" cx="256" cy="256" r="220" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.55"/>
-            <stop offset="35%" stop-color="var(--accent)" stop-opacity="0.25"/>
-            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="splash-core" cx="256" cy="252" r="110" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="var(--logo-warm-light)"/>
-            <stop offset="20%" stop-color="var(--logo-warm-mid)"/>
-            <stop offset="55%" stop-color="var(--accent)"/>
-            <stop offset="100%" stop-color="var(--accent-dim)"/>
-          </radialGradient>
-          <radialGradient id="splash-hilight" cx="232" cy="228" r="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="var(--logo-glow)" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="var(--logo-glow)" stop-opacity="0"/>
-          </radialGradient>
+          <clipPath id="splash-circle-clip">
+            <circle cx="256" cy="256" r="220"/>
+          </clipPath>
         </defs>
 
-        <!-- État mono (cercle plein de la couleur du mode), caché initialement -->
-        <g class="ember-logo-mono">
-          <circle cx="256" cy="256" r="220" fill="url(#splash-halo)"/>
-          <circle cx="256" cy="256" r="110" fill="url(#splash-core)"/>
-          <circle cx="232" cy="228" r="40" fill="url(#splash-hilight)"/>
-        </g>
-
-        <!-- État yin-yang (2 croissants + braise), visible initialement -->
+        <!-- Yin-yang : croissant ambre + croissant vert + braise (en arrière-plan) -->
         <g class="ember-logo-yinyang">
           <path d="M 256,36 A 220,220 0 0,0 256,476 A 110,110 0 0,1 256,256 A 110,110 0 0,0 256,36 Z"
                 fill="#ff8c42"/>
@@ -59,6 +40,12 @@
                 fill="#6abf69"/>
           <circle cx="256" cy="366" r="28" fill="#ff8c42"/>
         </g>
+
+        <!-- Eau qui monte du bas pour recouvrir le yin-yang, couleur du mode -->
+        <rect class="ember-logo-water"
+              x="36" y="36" width="440" height="440"
+              fill="var(--accent)"
+              clip-path="url(#splash-circle-clip)"/>
       </svg>
       <p class="loading-text">Ember</p>
     </div>
@@ -382,7 +369,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Logique appli (modules ES6 — voir app.js + state/utils/supabase/db/transitions/screens) -->
-  <script type="module" src="app.js?v=22"></script>
+  <script type="module" src="app.js?v=23"></script>
 
   <!-- Service worker + auto-reload sur nouvelle version -->
   <script>

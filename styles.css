@@ -161,22 +161,26 @@ p {
   .ember-logo-breathing { animation: none; }
 }
 
-/* ───── Résolution du logo splash (yin-yang → mono couleur du mode) ─────
+/* ───── Résolution du logo splash : eau qui remplit le cercle ─────
    Quand le splash bascule vers l'écran main, transitions.js ajoute
-   .is-resolved sur le logo. Le yin-yang fade-out, le cercle mono
-   fade-in — la couleur du cercle vient des CSS vars (--accent et co.),
-   qui sont elles-mêmes pilotées par body[data-mode]. Effet final : le
-   logo épouse visuellement le bouton +1 (de la même couleur). */
-.ember-logo .ember-logo-mono {
-  opacity: 0;
-  transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1);
+   .is-resolved. Le rectangle .ember-logo-water (clip-pathé au cercle)
+   est translaté en bas par défaut (translateY = sa hauteur). Quand
+   .is-resolved est ajouté, il remonte à translateY(0) → l'eau monte
+   et recouvre le yin-yang en arrière-plan. Couleur = var(--accent),
+   donc ambre en mode cigarette, vert tilleul en mode pastille. */
+.ember-logo .ember-logo-water {
+  /* fill-box met l'origine de transform au coin du rect lui-même, sinon
+     le translate est calculé par rapport au SVG entier et peut donner
+     un comportement imprévisible sur Safari iOS. */
+  transform-box: fill-box;
+  transform-origin: 0 0;
+  transform: translateY(440px);
+  transition: transform 850ms cubic-bezier(0.45, 0.05, 0.25, 1);
+  pointer-events: none;
 }
-.ember-logo .ember-logo-yinyang {
-  opacity: 1;
-  transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1);
+.ember-logo.is-resolved .ember-logo-water {
+  transform: translateY(0);
 }
-.ember-logo.is-resolved .ember-logo-mono { opacity: 1; }
-.ember-logo.is-resolved .ember-logo-yinyang { opacity: 0; }
 
 /* ───── Transition splash → écran suivant (wind-up + release) ─────
    Phase 1 (0-25%) : le logo se contracte légèrement (inspiration finale)
