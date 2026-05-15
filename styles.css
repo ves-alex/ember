@@ -861,6 +861,16 @@ p {
   font-size: 0.95rem;
   margin-bottom: 4px;
 }
+.setting-intro {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--muted);
+  background: rgba(var(--accent-rgb), 0.06);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.setting-intro strong { color: var(--text); font-weight: 700; }
 .setting-group label {
   display: flex;
   flex-direction: column;

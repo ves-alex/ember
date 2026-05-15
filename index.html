@@ -266,23 +266,30 @@
 
       <section class="setting-group">
         <h3>Plan de sevrage</h3>
+        <p class="setting-intro">
+          Deux repères à ne pas confondre :
+          la <strong>conso de référence</strong> = ton point de départ, jamais modifié ;
+          le <strong>quota</strong> = la limite que tu vises chaque jour, et qui peut se resserrer.
+        </p>
         <label>
           <span id="set-baseline-label">Conso de référence (avant de réduire)</span>
           <input id="set-baseline" type="number" inputmode="numeric" min="1" max="60" />
-          <span class="muted small">Ce que tu fumais/prenais par jour avant. Sert à calculer tes vraies économies — figé, ne baisse pas.</span>
+          <span class="muted small">Ce que tu fumais par jour <em>avant</em> de chercher à réduire. Reste figé : c'est le point de comparaison pour tes économies et tes clopes évitées. Ex. : 20 si tu fumais un paquet.</span>
         </label>
         <label>
           Quota journalier
           <input id="set-quota" type="number" inputmode="numeric" min="1" max="60" />
+          <span class="muted small">La limite que tu te donnes pour une journée. C'est ce nombre que l'app compare à ta conso du jour. Mets-le sous ta référence pour progresser.</span>
         </label>
         <label>
           Délai minimum (min)
           <input id="set-delay" type="number" inputmode="numeric" min="5" max="240" step="5" />
+          <span class="muted small">Temps minimum conseillé entre deux clopes. Un compte à rebours t'aide à patienter — tu peux toujours passer outre.</span>
         </label>
         <label>
           <span id="set-weekly-label">Réduction hebdomadaire (unités/semaine)</span>
           <input id="set-weekly" type="number" inputmode="numeric" min="0" max="10" />
-          <span class="muted small">Le quota baisse automatiquement chaque semaine. Mets 0 pour le geler.</span>
+          <span class="muted small">Combien de clopes l'app retire du quota chaque semaine, automatiquement. Ex. : 1 = le quota baisse de 1 tous les 7 jours. Mets 0 pour le figer (la référence, elle, ne bouge jamais).</span>
         </label>
       </section>
 
