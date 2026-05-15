@@ -7,6 +7,9 @@ import { getCurrentMode } from "../labels.js";
 
 export function fillSettingsForm() {
   if (!state.plan) return;
+  // Fallback daily_quota si baseline absente (plan pré-migration), même
+  // logique que effectiveBaseline() — le champ n'est jamais vide.
+  $("#set-baseline").value = state.plan.baseline_per_day || state.plan.daily_quota;
   $("#set-quota").value = state.plan.daily_quota;
   $("#set-delay").value = state.plan.min_delay_minutes;
   $("#set-weekly").value = state.plan.weekly_reduction || 0;
@@ -20,8 +23,10 @@ export function fillSettingsForm() {
 // mode a changé.
 export async function saveSettings() {
   const previousMode = getCurrentMode();
+  const quota = parseInt($("#set-quota").value, 10) || 15;
   const updates = {
-    daily_quota: parseInt($("#set-quota").value, 10) || 15,
+    baseline_per_day: parseInt($("#set-baseline").value, 10) || quota,
+    daily_quota: quota,
     min_delay_minutes: parseInt($("#set-delay").value, 10) || 60,
     weekly_reduction: parseInt($("#set-weekly").value, 10) || 0,
     price_per_pack: parseFloat($("#set-price").value) || 12.5,

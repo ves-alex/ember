@@ -4,9 +4,9 @@
 // Chart.js est chargé en <script> classique dans index.html et expose
 // la classe globale `Chart` sur window — on l'utilise telle quelle ici.
 
-import { state, TRIGGER_LABELS, getCurrentCigarettes } from "../state.js";
+import { state, TRIGGER_LABELS, TRIGGER_TIPS, getCurrentCigarettes } from "../state.js";
 import { $, pad2, startOfDay, daysBetween } from "../utils.js";
-import { effectiveQuota } from "./main.js";
+import { effectiveQuota, effectiveBaseline, quotaOnDate } from "./main.js";
 import { getLabels } from "../labels.js";
 
 export function renderStats() {
@@ -17,6 +17,7 @@ export function renderStats() {
 
   renderWeekly();
   renderDailyChart();
+  renderQuotaTrajectory();
   renderHeatmap();
   renderTriggerList();
   renderSavings();
@@ -50,6 +51,21 @@ function startDate() {
 
 function daysSinceStart() {
   return daysBetween(startDate(), new Date()) + 1;   // inclut aujourd'hui (J+1 dès le premier jour)
+}
+
+// Somme des quotas effectifs jour par jour, du début à aujourd'hui inclus.
+// Comme le quota baisse chaque semaine, on ne peut pas faire quota×jours :
+// il faut additionner le quota réellement applicable chaque jour.
+function cumulativeQuota() {
+  const start = startOfDay(startDate());
+  const today = startOfDay(new Date());
+  let total = 0;
+  const d = new Date(start);
+  while (d <= today) {
+    total += quotaOnDate(state.plan, d);
+    d.setDate(d.getDate() + 1);
+  }
+  return total;
 }
 
 // ─── Cette semaine vs la précédente ───
@@ -166,6 +182,55 @@ export function renderDailyChart() {
   });
 }
 
+// ─── Trajectoire du quota ───
+// Rend visible le moteur silencieux de l'app : le quota baisse de
+// `weekly_reduction` toutes les 7 jours. On affiche le quota du jour, la
+// prochaine marche (valeur + date), et la date d'arrivée au plancher (1/j).
+function renderQuotaTrajectory() {
+  if (!state.plan) return;
+  const plan = state.plan;
+  const start = startOfDay(startDate());
+  const today = startOfDay(new Date());
+  const reduction = plan.weekly_reduction || 0;
+  const current = effectiveQuota(plan);
+
+  $("#traj-current").textContent = "Quota actuel : " + current + " / jour";
+  const nextEl = $("#traj-next");
+  const goalEl = $("#traj-goal");
+
+  if (reduction <= 0) {
+    nextEl.textContent = "Quota fixe : il ne baisse pas automatiquement.";
+    goalEl.textContent = "";
+    return;
+  }
+  if (current <= 1) {
+    nextEl.textContent = "Tu es au plancher : 1 / jour. Le dernier palier.";
+    goalEl.textContent = "";
+    return;
+  }
+
+  const weeks = Math.max(0, Math.floor(daysBetween(start, today) / 7));
+  const nextDate = new Date(start);
+  nextDate.setDate(nextDate.getDate() + (weeks + 1) * 7);
+  const nextQuota = Math.max(1, plan.daily_quota - reduction * (weeks + 1));
+  const inDays = daysBetween(today, nextDate);
+  const whenStr = nextDate.toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long",
+  });
+  nextEl.textContent =
+    "Prochaine baisse : " + nextQuota + " / jour dans " +
+    inDays + " jour" + (inDays > 1 ? "s" : "") + " (" + whenStr + ").";
+
+  // Date d'arrivée au plancher : nb de semaines pour que le quota touche 1.
+  const weeksToFloor = Math.ceil((plan.daily_quota - 1) / reduction);
+  const floorDate = new Date(start);
+  floorDate.setDate(floorDate.getDate() + weeksToFloor * 7);
+  const floorStr = floorDate.toLocaleDateString("fr-FR", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+  goalEl.textContent = "À ce rythme, quota de 1/jour atteint le " + floorStr + ".";
+}
+
 // ─── Heatmap heures × jours ───
 function renderHeatmap() {
   const wrap = $("#heatmap");
@@ -227,13 +292,28 @@ function renderTriggerList() {
   }
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const ul = $("#trigger-list");
+  const tipEl = $("#trigger-tip");
   ul.innerHTML = "";
   if (entries.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
     li.textContent = "Aucun trigger renseigné pour l'instant.";
     ul.appendChild(li);
+    tipEl.hidden = true;
     return;
+  }
+
+  // Conseil ciblé sur le trigger n°1 : c'est là que l'app crée de la valeur,
+  // sinon tagger ne sert à rien. entries est déjà trié par fréquence desc.
+  const topTag = entries[0][0];
+  const tip = TRIGGER_TIPS[topTag];
+  if (tip) {
+    tipEl.innerHTML =
+      "<strong>" + (TRIGGER_LABELS[topTag] || topTag) +
+      "</strong> est ton déclencheur n°1. " + tip;
+    tipEl.hidden = false;
+  } else {
+    tipEl.hidden = true;
   }
   const total = entries.reduce((s, [, n]) => s + n, 0);
   const max = entries[0][1];
@@ -268,7 +348,10 @@ function renderSavings() {
   const start = startDate();
   const days = daysSinceStart();
   const real = getCurrentCigarettes().filter((c) => new Date(c.smoked_at) >= start).length;
-  const baseline = state.plan.daily_quota * days;
+  // Référence = ce que l'user fumait AVANT de réduire (figé), pas son quota.
+  // C'est ça qui donne le vrai nombre de clopes / d'euros évités.
+  const ref = effectiveBaseline(state.plan);
+  const baseline = ref * days;
   const avoided = Math.max(0, baseline - real);
   const savings = avoided * pricePerCig;
 
@@ -286,7 +369,7 @@ function renderSavings() {
   $("#savings-detail").textContent =
     "Depuis le " + startStr + " (" + days + " jour" + (days > 1 ? "s" : "") + ").";
   $("#savings-avoided").textContent =
-    getLabels().savingsAvoided(avoided, state.plan.daily_quota);
+    getLabels().savingsAvoided(avoided, ref);
 }
 
 // ─── Bilan cumulé depuis le début ───
@@ -295,12 +378,14 @@ function renderCumul() {
   const start = startDate();
   const days = daysSinceStart();
   const real = getCurrentCigarettes().filter((c) => new Date(c.smoked_at) >= start).length;
-  const baseline = state.plan.daily_quota * days;
-  const diff = baseline - real;
+  // Objectif cumulé = somme des quotas dégressifs jour par jour (la cible se
+  // resserre avec le temps), et non l'ancienne conso de référence.
+  const objective = cumulativeQuota();
+  const diff = objective - real;
   const lineEl = $("#cumul-line");
   const detailEl = $("#cumul-detail");
 
-  lineEl.textContent = getLabels().cumulLine(days, real, baseline);
+  lineEl.textContent = getLabels().cumulLine(days, real, objective);
   if (diff > 0) {
     detailEl.innerHTML = "Tu es <strong style='color:var(--success)'>" + diff +
       "</strong> en dessous de l'objectif. Continue.";
@@ -316,20 +401,28 @@ function renderCumul() {
 function renderStreak() {
   const start = startOfDay(startDate());
   const today = startOfDay(new Date());
-  const quota = effectiveQuota(state.plan);
 
-  // Booléens "under_quota" par jour, du start à hier inclus.
+  // Booléens "sous quota" par jour, du start à AUJOURD'HUI inclus. Le quota
+  // de référence est celui réellement applicable ce jour-là (il baisse chaque
+  // semaine), pas le quota d'aujourd'hui appliqué rétroactivement.
+  // Aujourd'hui compte tant qu'il n'est pas encore dépassé : la journée reste
+  // « sauvable », on ne casse pas la série tant que tu n'as pas franchi la
+  // limite — c'est plus juste et ça maintient la motivation en cours de route.
   const myCigs = getCurrentCigarettes();
   const flags = [];
   let day = new Date(start);
-  while (day < today) {
+  while (day <= today) {
     const next = new Date(day);
     next.setDate(next.getDate() + 1);
     const count = myCigs.filter((c) => {
       const t = new Date(c.smoked_at);
       return t >= day && t < next;
     }).length;
-    flags.push(count < quota);
+    // « Sous quota » = strictement en dessous. Pour aujourd'hui, tant que
+    // tu n'as pas atteint la limite la journée reste comptée comme bonne ;
+    // c'est la même condition, mais c'est l'inclusion d'aujourd'hui dans la
+    // boucle (day <= today) qui change le comportement vs l'ancienne version.
+    flags.push(count < quotaOnDate(state.plan, day));
     day = next;
   }
 
@@ -347,13 +440,38 @@ function renderStreak() {
     else { run = 0; }
   }
 
-  $("#streak-value").textContent =
-    current + " jour" + (current !== 1 ? "s" : "") + " consécutif" + (current !== 1 ? "s" : "") + " sous quota";
+  // Métrique moins binaire : part des jours sous quota sur tout l'historique.
+  // Une mauvaise journée n'efface pas tout, contrairement à la série.
+  const goodDays = flags.filter(Boolean).length;
+  const pct = flags.length ? Math.round((goodDays / flags.length) * 100) : 0;
+
+  const valEl = $("#streak-value");
+  const recEl = $("#streak-record");
+
   if (flags.length === 0) {
-    $("#streak-record").textContent = "L'historique commencera demain.";
-  } else if (record === current) {
-    $("#streak-record").textContent = "C'est ton record. Tiens bon.";
+    valEl.textContent = "Série à démarrer";
+    recEl.textContent = "L'historique commence aujourd'hui.";
+    return;
+  }
+
+  if (current >= 1) {
+    valEl.textContent =
+      current + " jour" + (current !== 1 ? "s" : "") +
+      " consécutif" + (current !== 1 ? "s" : "") + " sous quota";
   } else {
-    $("#streak-record").textContent = "Record : " + record + " jour" + (record !== 1 ? "s" : "") + ".";
+    // 0 : on ne l'affiche pas comme un échec sec.
+    valEl.textContent = "Série à reconstruire";
+  }
+
+  const pctPart = goodDays + "/" + flags.length + " jours sous quota (" + pct + " %)";
+  if (current === 0 && record >= 1) {
+    recEl.textContent =
+      "Une journée au-dessus a remis le compteur à zéro. Ta meilleure série reste " +
+      record + " j. " + pctPart + ".";
+  } else if (record === current) {
+    recEl.textContent = "C'est ton record. Tiens bon. " + pctPart + ".";
+  } else {
+    recEl.textContent =
+      "Record : " + record + " jour" + (record !== 1 ? "s" : "") + ". " + pctPart + ".";
   }
 }

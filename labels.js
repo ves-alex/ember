@@ -31,7 +31,7 @@ const MODE_TEXTS = {
 
     // Onboarding
     onbStep2Title: "Combien de clopes par jour aujourd'hui ?",
-    onbStep2Sub: "Sois honnête, c'est ta baseline de départ.",
+    onbStep2Sub: "Sois honnête, c'est ta référence pour mesurer tes progrès.",
     onbStep3Title: "Quel délai minimum entre deux clopes ?",
     onbStep3Sub: "Un timer t'aidera à attendre. Tu peux toujours passer outre.",
     onbStep4Title: "Prix d'un paquet ?",
@@ -63,9 +63,9 @@ const MODE_TEXTS = {
       " sur un quota cumulé de " + baseline + ".",
 
     // Stats — savings
-    savingsAvoided: (n, dailyQuota) =>
+    savingsAvoided: (n, ref) =>
       n + " clope" + (n > 1 ? "s" : "") + " évitée" + (n > 1 ? "s" : "") +
-      " par rapport à ta baseline de " + dailyQuota + "/j.",
+      " par rapport à ta conso d'avant (" + ref + "/j).",
     showSavings: true,
 
     // Stats — heatmap tooltip
@@ -94,7 +94,7 @@ const MODE_TEXTS = {
 
     // Onboarding
     onbStep2Title: "Combien de pastilles par jour aujourd'hui ?",
-    onbStep2Sub: "Ta baseline actuelle (Nicorette recommande max 15/j).",
+    onbStep2Sub: "Ta conso actuelle, référence de tes progrès (Nicorette : max 15/j).",
     onbStep3Title: "Quel délai minimum entre deux pastilles ?",
     onbStep3Sub: "Un timer t'aidera à espacer. Tu peux toujours passer outre.",
     onbStep4Title: "Prix d'une boîte ?",

@@ -45,6 +45,7 @@ export function setPickedMode(mode, modeTexts) {
 
   // Préremplit les inputs des étapes 2-4 avec les defaults du mode
   if (modeTexts) {
+    $("#onb-baseline").value = modeTexts.quotaDefault;
     $("#onb-quota").value = modeTexts.quotaDefault;
     $("#onb-delay").value = modeTexts.delayDefault;
     $("#onb-price").value = modeTexts.priceDefault;
@@ -73,8 +74,13 @@ export function setPickedMode(mode, modeTexts) {
 // (null si erreur). Ne touche pas au state ni à la navigation : c'est
 // app.js qui décide quoi faire ensuite.
 export async function submitOnboarding() {
+  const baseline = parseInt($("#onb-baseline").value, 10) || 15;
+  // Le quota saisi ne peut pas dépasser la conso de référence : viser
+  // au-dessus de ce qu'on fume déjà n'a pas de sens pour un sevrage.
+  const quota = Math.min(parseInt($("#onb-quota").value, 10) || baseline, baseline);
   const plan = {
-    daily_quota: parseInt($("#onb-quota").value, 10) || 15,
+    baseline_per_day: baseline,
+    daily_quota: quota,
     min_delay_minutes: parseInt($("#onb-delay").value, 10) || 60,
     weekly_reduction: 1,
     price_per_pack: parseFloat($("#onb-price").value) || 12.5,

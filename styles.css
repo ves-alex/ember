@@ -801,6 +801,17 @@ p {
   font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
 }
+.trigger-tip {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(var(--accent-rgb), 0.08);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.trigger-tip strong { color: var(--accent); font-weight: 700; }
 
 /* Heatmap : grille 24 colonnes × 7 lignes */
 .heatmap {

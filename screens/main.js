@@ -16,6 +16,22 @@ export function effectiveQuota(plan) {
   return Math.max(1, reduced);
 }
 
+// Quota effectif à une date donnée (et non « maintenant »), utilisé pour
+// reconstituer l'objectif cumulé jour par jour sur l'historique.
+export function quotaOnDate(plan, date) {
+  if (!plan) return 15;
+  const start = new Date(plan.start_date + "T00:00:00");
+  const weeks = Math.max(0, Math.floor(daysBetween(start, date) / 7));
+  return Math.max(1, plan.daily_quota - (plan.weekly_reduction || 0) * weeks);
+}
+
+// Conso de référence figée (ce que l'user fumait/prenait avant de réduire).
+// Fallback sur daily_quota pour les plans créés avant la migration baseline.
+export function effectiveBaseline(plan) {
+  if (!plan) return 15;
+  return plan.baseline_per_day || plan.daily_quota;
+}
+
 export function renderMain() {
   const now = new Date();
   $("#header-date").textContent = fmtDateFr(now);

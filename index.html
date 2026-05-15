@@ -84,9 +84,14 @@
 
       <div class="onb-step" data-step="2" hidden>
         <h2>Combien de clopes par jour aujourd'hui&nbsp;?</h2>
-        <p class="muted">Sois honnête, c'est ta baseline de départ.</p>
-        <input id="onb-quota" type="number" inputmode="numeric" min="1" max="60" value="15" />
+        <p class="muted">Sois honnête, c'est ta référence pour mesurer tes progrès.</p>
+        <input id="onb-baseline" type="number" inputmode="numeric" min="1" max="60" value="15" />
         <span class="unit">par jour</span>
+        <div class="onb-secondary">
+          <label for="onb-quota">Quota que tu te fixes pour démarrer</label>
+          <input id="onb-quota" type="number" inputmode="numeric" min="1" max="60" value="15" />
+          <p class="muted small">Tu peux viser plus bas que ta conso actuelle. Il baissera ensuite tout seul chaque semaine.</p>
+        </div>
       </div>
 
       <div class="onb-step" data-step="3" hidden>
@@ -197,6 +202,13 @@
         </div>
       </section>
 
+      <section class="stat-card stat-trajectory">
+        <h3>Trajectoire du quota</h3>
+        <p id="traj-current" class="cumul-line">—</p>
+        <p id="traj-next" class="muted small"></p>
+        <p id="traj-goal" class="muted small"></p>
+      </section>
+
       <section class="stat-card">
         <h3>Heatmap des heures</h3>
         <p class="muted small">Quelles heures de la journée te font allumer une clope.</p>
@@ -209,6 +221,7 @@
         <ul id="trigger-list" class="trigger-list">
           <li class="muted">Aucun trigger renseigné pour l'instant.</li>
         </ul>
+        <p id="trigger-tip" class="trigger-tip" hidden></p>
       </section>
 
       <section class="stat-card stat-savings">
@@ -253,6 +266,11 @@
 
       <section class="setting-group">
         <h3>Plan de sevrage</h3>
+        <label>
+          <span id="set-baseline-label">Conso de référence (avant de réduire)</span>
+          <input id="set-baseline" type="number" inputmode="numeric" min="1" max="60" />
+          <span class="muted small">Ce que tu fumais/prenais par jour avant. Sert à calculer tes vraies économies — figé, ne baisse pas.</span>
+        </label>
         <label>
           Quota journalier
           <input id="set-quota" type="number" inputmode="numeric" min="1" max="60" />
