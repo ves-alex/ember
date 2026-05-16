@@ -1,7 +1,7 @@
-// Écran réglages : édition du plan + export JSON.
+// Écran réglages : édition du plan.
 
 import { state } from "../state.js";
-import { $, isoDate } from "../utils.js";
+import { $ } from "../utils.js";
 import { upsertQuitPlan } from "../db.js";
 import { getCurrentMode } from "../labels.js";
 
@@ -42,19 +42,4 @@ export async function saveSettings() {
   }
   $("#settings-feedback").textContent = "Erreur d'enregistrement.";
   return { ok: false, modeChanged: false };
-}
-
-export function exportJSON() {
-  const blob = new Blob(
-    [JSON.stringify({ plan: state.plan, cigarettes: state.cigarettes }, null, 2)],
-    { type: "application/json" }
-  );
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "ember-" + isoDate(new Date()) + ".json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }

@@ -18,7 +18,7 @@ import {
   renderMain, startDelayTimer, handlePlusOne, closeTriggerModal,
 } from "./screens/main.js";
 import { renderStats, renderDailyChart, adjustWeeklyReduction } from "./screens/stats.js";
-import { fillSettingsForm, saveSettings, exportJSON } from "./screens/settings.js";
+import { fillSettingsForm, saveSettings } from "./screens/settings.js";
 import {
   showOnboardingStep, getCurrentStep, setPickedMode, submitOnboarding,
 } from "./screens/onboarding.js";
@@ -121,7 +121,6 @@ function wireEvents() {
       renderMain();   // Refresh compteur/status avec les nouveaux labels
     }
   });
-  $("#btn-export").addEventListener("click", exportJSON);
 
   // Stepper carte Trajectoire : régler la réduction hebdo à la main, dans
   // les deux sens (0 inclus = quota figé, totalement réversible). stats.js
