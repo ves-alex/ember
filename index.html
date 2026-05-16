@@ -207,13 +207,17 @@
         <p id="traj-current" class="cumul-line">—</p>
         <p id="traj-next" class="muted small"></p>
         <p id="traj-goal" class="muted small"></p>
+        <button id="traj-activate" class="btn btn-primary btn-block" type="button" hidden>
+          Activer une réduction d'1/semaine
+        </button>
       </section>
 
       <section class="stat-card">
         <h3>Heatmap des heures</h3>
         <p class="muted small">Quelles heures de la journée te font allumer une clope.</p>
         <div id="heatmap" class="heatmap"></div>
-        <p id="heatmap-placeholder" class="placeholder" hidden>Disponible après 7 jours d'utilisation, le temps que des motifs se dessinent.</p>
+        <p id="heatmap-placeholder" class="placeholder" hidden>Disponible après 7 jours d'utilisation, le temps d'avoir de quoi montrer un motif.</p>
+        <p id="heatmap-note" class="muted small" hidden></p>
       </section>
 
       <section class="stat-card">
@@ -221,6 +225,7 @@
         <ul id="trigger-list" class="trigger-list">
           <li class="muted">Aucun trigger renseigné pour l'instant.</li>
         </ul>
+        <p id="trigger-coverage" class="muted small" hidden></p>
         <p id="trigger-tip" class="trigger-tip" hidden></p>
       </section>
 
@@ -238,7 +243,7 @@
       </section>
 
       <section class="stat-card">
-        <h3>Série</h3>
+        <h3>Régularité</h3>
         <p id="streak-value" class="streak-value">—</p>
         <p id="streak-record" class="muted small"></p>
       </section>

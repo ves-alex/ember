@@ -10,14 +10,14 @@
 import { state, SUPABASE_URL } from "./state.js";
 import { $, $$ } from "./utils.js";
 import { ensureSession, signInGoogle, signOut } from "./supabase.js";
-import { loadQuitPlan, loadCigarettes30d, updateTrigger } from "./db.js";
+import { loadQuitPlan, loadCigarettesSinceStart, updateTrigger } from "./db.js";
 import {
   showScreen, holdSplash, transitionFromSplash,
 } from "./transitions.js";
 import {
   renderMain, startDelayTimer, handlePlusOne, closeTriggerModal,
 } from "./screens/main.js";
-import { renderStats, renderDailyChart } from "./screens/stats.js";
+import { renderStats, renderDailyChart, activateWeeklyReduction } from "./screens/stats.js";
 import { fillSettingsForm, saveSettings, exportJSON } from "./screens/settings.js";
 import {
   showOnboardingStep, getCurrentStep, setPickedMode, submitOnboarding,
@@ -57,7 +57,7 @@ function applyModeToUI() {
 }
 
 async function enterApp() {
-  state.cigarettes = await loadCigarettes30d();
+  state.cigarettes = await loadCigarettesSinceStart();
   showScreen("screen-main");
   applyModeToUI();
   renderMain();
@@ -95,7 +95,7 @@ async function boot() {
   }
 
   // Charge les clopes en parallèle du splash hold pour gagner du temps.
-  state.cigarettes = await loadCigarettes30d();
+  state.cigarettes = await loadCigarettesSinceStart();
   await holdSplash(splashStart, MIN_SPLASH_MS);
 
   // Pré-render le main avant la transition pour que la mesure du bouton
@@ -122,6 +122,20 @@ function wireEvents() {
     }
   });
   $("#btn-export").addEventListener("click", exportJSON);
+
+  // CTA carte Trajectoire : activer la réduction hebdo quand elle est à 0.
+  // stats.js fait l'upsert + re-render des stats ; on rafraîchit aussi le
+  // compteur (le quota influe sur les états warning) et le form Réglages.
+  $("#traj-activate").addEventListener("click", async () => {
+    const btn = $("#traj-activate");
+    btn.disabled = true;
+    const ok = await activateWeeklyReduction();
+    btn.disabled = false;
+    if (ok) {
+      renderMain();
+      fillSettingsForm();
+    }
+  });
 
   // Bottom nav
   $$(".nav-btn").forEach((btn) => {

@@ -14,9 +14,26 @@ export async function loadQuitPlan() {
   return (data && data[0]) || null;
 }
 
-export async function loadCigarettes30d() {
-  const since = new Date();
-  since.setDate(since.getDate() - 30);
+// Charge les clopes depuis le DÉBUT du plan (start_date), pas sur une
+// fenêtre glissante de 30 j. Sinon tous les compteurs « depuis le début »
+// (Économies, Bilan, Série) se comparent à un total tronqué dès le jour 31
+// et te félicitent à tort (jours fantômes comptés « sous quota »). Garde-fou
+// à 366 j en arrière au cas où un start_date serait aberrant.
+export async function loadCigarettesSinceStart() {
+  const HARD_FLOOR_DAYS = 366;
+  const floor = new Date();
+  floor.setDate(floor.getDate() - HARD_FLOOR_DAYS);
+
+  let since;
+  const sd = state.plan && state.plan.start_date;
+  if (sd) {
+    const start = new Date(sd + "T00:00:00");
+    since = start < floor ? floor : start;
+  } else {
+    since = new Date();
+    since.setDate(since.getDate() - 30);   // pas de plan encore : défaut 30 j
+  }
+
   const isoSince = since.toISOString();
   const { data, error } = await restRequest(
     "/cigarettes?user_id=eq." + state.user.id +
@@ -24,7 +41,7 @@ export async function loadCigarettes30d() {
     "&select=id,smoked_at,trigger_tag,note,tracking_mode&order=smoked_at.desc"
   );
   if (error) {
-    console.error("loadCigarettes30d", error);
+    console.error("loadCigarettesSinceStart", error);
     return [];
   }
   return data || [];

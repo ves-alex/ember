@@ -61,7 +61,7 @@ export function renderMain() {
   if (plusLabelEl) plusLabelEl.textContent = L.plusButtonLabel;
   $("#btn-plus-one").setAttribute("aria-label", L.plusAriaLabel);
 
-  // myCigs est trié par smoked_at desc (cf. loadCigarettes30d), donc [0]
+  // myCigs est trié par smoked_at desc (cf. loadCigarettesSinceStart), donc [0]
   // est bien la dernière entrée du mode courant.
   const last = myCigs[0];
   state.lastCigaretteId = last ? last.id : null;

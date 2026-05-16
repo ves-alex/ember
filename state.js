@@ -69,7 +69,7 @@ export const TRIGGER_TIPS = {
 export const state = {
   user: null,
   plan: null,
-  cigarettes: [],        // 30 derniers jours, TOUS modes confondus
+  cigarettes: [],        // depuis start_date (cap 366 j), TOUS modes confondus
   lastCigaretteId: null,
   delayTimer: null,
   chartInstance: null,
@@ -80,7 +80,7 @@ export const state = {
 // ce filtré au lieu de `state.cigarettes` direct, pour isoler les deux modes
 // (cigarette / pastille) : chaque mode son compteur, son historique, ses
 // stats. La colonne `tracking_mode` sur la table `cigarettes` est servie
-// par `loadCigarettes30d()` et injectée par `insertCigarette()`.
+// par `loadCigarettesSinceStart()` et injectée par `insertCigarette()`.
 export function getCurrentCigarettes() {
   const mode = (state.plan && state.plan.tracking_mode) || "cigarette";
   return state.cigarettes.filter((c) => (c.tracking_mode || "cigarette") === mode);

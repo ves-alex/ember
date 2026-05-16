@@ -326,6 +326,7 @@ p {
   font-weight: 600;
 }
 .btn-primary:hover { background: #ff9a55; }
+#traj-activate { margin-top: 12px; }
 
 .btn-ghost {
   background: transparent;

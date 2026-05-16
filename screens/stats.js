@@ -8,6 +8,7 @@ import { state, TRIGGER_LABELS, TRIGGER_TIPS, getCurrentCigarettes } from "../st
 import { $, pad2, startOfDay, daysBetween } from "../utils.js";
 import { effectiveQuota, effectiveBaseline, quotaOnDate } from "./main.js";
 import { getLabels } from "../labels.js";
+import { upsertQuitPlan } from "../db.js";
 
 export function renderStats() {
   // Masque ou révèle la section "Économies" selon le mode courant. En mode
@@ -197,9 +198,14 @@ function renderQuotaTrajectory() {
   $("#traj-current").textContent = "Quota actuel : " + current + " / jour";
   const nextEl = $("#traj-next");
   const goalEl = $("#traj-goal");
+  const activateBtn = $("#traj-activate");
+  // Bouton visible uniquement quand le moteur de réduction est éteint :
+  // c'est là qu'Ember cesse d'être un sevrage pour n'être qu'un compteur.
+  if (activateBtn) activateBtn.hidden = reduction > 0;
 
   if (reduction <= 0) {
-    nextEl.textContent = "Quota fixe : il ne baisse pas automatiquement.";
+    nextEl.textContent =
+      "Quota fixe : il ne baisse pas. Sans réduction, Ember compte mais ne te fait pas progresser vers l'arrêt.";
     goalEl.textContent = "";
     return;
   }
@@ -231,21 +237,90 @@ function renderQuotaTrajectory() {
   goalEl.textContent = "À ce rythme, quota de 1/jour atteint le " + floorStr + ".";
 }
 
-// ─── Heatmap heures × jours ───
+// Active une réduction d'1/semaine depuis la carte Trajectoire (CTA quand le
+// moteur est éteint). merge-duplicates ne touche que `weekly_reduction`, le
+// reste du plan est préservé. app.js rafraîchit ensuite main + settings.
+export async function activateWeeklyReduction() {
+  const saved = await upsertQuitPlan({ weekly_reduction: 1 });
+  if (!saved) {
+    alert("Impossible d'activer la réduction. Vérifie ta connexion.");
+    return false;
+  }
+  state.plan = saved;
+  renderStats();
+  return true;
+}
+
+// ─── Heatmap des heures ───
+// Progressif : tant qu'il n'y a pas ~3 semaines de données, la grille
+// jour×heure (7×24 = 168 cases) n'aurait ~1 échantillon par case → bruit
+// pur, aucun « motif » visible malgré la promesse du sous-titre. On montre
+// donc d'abord une vue HEURES SEULES (24 cases), utile dès 7 jours et
+// cohérente avec le texte « Quelles heures de la journée ». Le jour×heure
+// n'apparaît qu'une fois qu'il devient statistiquement lisible.
+const HEATMAP_GRID_DAYS = 21;
+
 function renderHeatmap() {
   const wrap = $("#heatmap");
   const placeholder = $("#heatmap-placeholder");
+  const note = $("#heatmap-note");
   const days = daysSinceStart();
   const myCigs = getCurrentCigarettes();
+
   if (days < 7 || myCigs.length < 5) {
     wrap.hidden = true;
     placeholder.hidden = false;
+    if (note) note.hidden = true;
     return;
   }
   wrap.hidden = false;
   placeholder.hidden = true;
   wrap.innerHTML = "";
 
+  const fmtTitle = (h, v) => {
+    const L = getLabels();
+    return pad2(h) + "h — " + v + " " + (v === 1 ? L.unit : L.unitPlural);
+  };
+
+  if (days < HEATMAP_GRID_DAYS) {
+    // ── Vue heures seules (1 ligne de 24) ──
+    const hours = Array(24).fill(0);
+    for (const c of myCigs) hours[new Date(c.smoked_at).getHours()]++;
+    let max = 1;
+    for (const v of hours) if (v > max) max = v;
+
+    const corner = document.createElement("div");
+    corner.className = "heatmap-row-label";
+    wrap.appendChild(corner);
+    for (let h = 0; h < 24; h++) {
+      const lbl = document.createElement("div");
+      lbl.className = "heatmap-row-label";
+      lbl.textContent = h % 6 === 0 ? h + "h" : "";
+      wrap.appendChild(lbl);
+    }
+    const rowLbl = document.createElement("div");
+    rowLbl.className = "heatmap-row-label";
+    wrap.appendChild(rowLbl);
+    for (let h = 0; h < 24; h++) {
+      const v = hours[h];
+      const cell = document.createElement("div");
+      cell.className = "heatmap-cell";
+      cell.dataset.level = v === 0 ? 0 : Math.min(4, Math.ceil((v / max) * 4));
+      cell.title = fmtTitle(h, v);
+      wrap.appendChild(cell);
+    }
+    wrap.style.gridTemplateRows = "16px 1fr";
+    if (note) {
+      note.hidden = false;
+      note.textContent =
+        "Vue par heure. La grille jour × heure arrive vers " +
+        HEATMAP_GRID_DAYS + " jours, quand les motifs deviennent fiables.";
+    }
+    return;
+  }
+
+  // ── Grille jour × heure (7×24) ──
+  if (note) note.hidden = true;
   const buckets = Array.from({ length: 7 }, () => Array(24).fill(0));
   for (const c of myCigs) {
     const t = new Date(c.smoked_at);
@@ -286,13 +361,16 @@ function renderHeatmap() {
 
 // ─── Triggers ───
 function renderTriggerList() {
+  const allCigs = getCurrentCigarettes();
   const counts = {};
-  for (const c of getCurrentCigarettes()) {
+  for (const c of allCigs) {
     if (c.trigger_tag) counts[c.trigger_tag] = (counts[c.trigger_tag] || 0) + 1;
   }
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const entries = sorted.slice(0, 6);
   const ul = $("#trigger-list");
   const tipEl = $("#trigger-tip");
+  const covEl = $("#trigger-coverage");
   ul.innerHTML = "";
   if (entries.length === 0) {
     const li = document.createElement("li");
@@ -300,7 +378,18 @@ function renderTriggerList() {
     li.textContent = "Aucun trigger renseigné pour l'instant.";
     ul.appendChild(li);
     tipEl.hidden = true;
+    if (covEl) covEl.hidden = true;
     return;
+  }
+
+  // % calculés sur TOUTES les clopes taguées (pas seulement le top 6) pour
+  // ne pas fausser les parts, et couverture affichée pour rappeler que les
+  // clopes non taguées ne sont pas dans ces %.
+  const taggedTotal = sorted.reduce((s, [, n]) => s + n, 0);
+  if (covEl) {
+    covEl.hidden = false;
+    covEl.textContent =
+      taggedTotal + "/" + allCigs.length + " clopes taguées — les % portent sur les taguées.";
   }
 
   // Conseil ciblé sur le trigger n°1 : c'est là que l'app crée de la valeur,
@@ -315,7 +404,6 @@ function renderTriggerList() {
   } else {
     tipEl.hidden = true;
   }
-  const total = entries.reduce((s, [, n]) => s + n, 0);
   const max = entries[0][1];
   for (const [tag, count] of entries) {
     const li = document.createElement("li");
@@ -329,7 +417,7 @@ function renderTriggerList() {
     bar.appendChild(fill);
     const num = document.createElement("span");
     num.className = "trigger-count";
-    const pct = Math.round((count / total) * 100);
+    const pct = Math.round((count / taggedTotal) * 100);
     num.textContent = count + " · " + pct + " %";
     li.appendChild(name);
     li.appendChild(bar);
@@ -418,11 +506,12 @@ function renderStreak() {
       const t = new Date(c.smoked_at);
       return t >= day && t < next;
     }).length;
-    // « Sous quota » = strictement en dessous. Pour aujourd'hui, tant que
-    // tu n'as pas atteint la limite la journée reste comptée comme bonne ;
-    // c'est la même condition, mais c'est l'inclusion d'aujourd'hui dans la
-    // boucle (day <= today) qui change le comportement vs l'ancienne version.
-    flags.push(count < quotaOnDate(state.plan, day));
+    // Réussite = être DANS son quota (≤), pas strictement en dessous.
+    // Atteindre pile sa limite, c'est avoir tenu son objectif, pas échoué :
+    // traiter un jour à 12 (quota 12) comme un échec est démotivant et
+    // injuste vs un jour à 30. La tolérance s'arrête là (pas de marge floue
+    // au-delà, qui serait impossible à expliquer simplement).
+    flags.push(count <= quotaOnDate(state.plan, day));
     day = next;
   }
 
@@ -440,8 +529,10 @@ function renderStreak() {
     else { run = 0; }
   }
 
-  // Métrique moins binaire : part des jours sous quota sur tout l'historique.
-  // Une mauvaise journée n'efface pas tout, contrairement à la série.
+  // Chiffre HÉROS = part des jours dans le quota (métrique robuste : une
+  // mauvaise journée ne l'efface pas). La série consécutive — fragile et
+  // sujette à l'effet « tant pis pour aujourd'hui » qui fait rechuter — est
+  // reléguée en ligne secondaire, jamais affichée comme un échec sec.
   const goodDays = flags.filter(Boolean).length;
   const pct = flags.length ? Math.round((goodDays / flags.length) * 100) : 0;
 
@@ -449,29 +540,29 @@ function renderStreak() {
   const recEl = $("#streak-record");
 
   if (flags.length === 0) {
-    valEl.textContent = "Série à démarrer";
+    valEl.textContent = "À suivre";
     recEl.textContent = "L'historique commence aujourd'hui.";
     return;
   }
 
-  if (current >= 1) {
-    valEl.textContent =
-      current + " jour" + (current !== 1 ? "s" : "") +
-      " consécutif" + (current !== 1 ? "s" : "") + " sous quota";
-  } else {
-    // 0 : on ne l'affiche pas comme un échec sec.
-    valEl.textContent = "Série à reconstruire";
-  }
+  // Héros : le %, avec le détail brut juste derrière.
+  valEl.textContent = pct + " % de jours dans ton quota";
 
-  const pctPart = goodDays + "/" + flags.length + " jours sous quota (" + pct + " %)";
-  if (current === 0 && record >= 1) {
-    recEl.textContent =
-      "Une journée au-dessus a remis le compteur à zéro. Ta meilleure série reste " +
-      record + " j. " + pctPart + ".";
-  } else if (record === current) {
-    recEl.textContent = "C'est ton record. Tiens bon. " + pctPart + ".";
+  const detail =
+    goodDays + "/" + flags.length + " jours · série en cours " +
+    current + " j · record " + record + " j.";
+
+  let note;
+  if (current === 0) {
+    // Anti-rechute : un écart ne disqualifie pas l'effort global.
+    note = "Hier au-dessus, mais le reste compte : " + pct +
+      " % de tes jours tiennent. Repars de là, sans tout remettre à zéro.";
+  } else if (current === record && record >= 2) {
+    note = "Tu es sur ta meilleure période. Continue.";
+  } else if (pct >= 70) {
+    note = "Tendance solide. C'est ça qui compte sur la durée, pas un jour isolé.";
   } else {
-    recEl.textContent =
-      "Record : " + record + " jour" + (record !== 1 ? "s" : "") + ". " + pctPart + ".";
+    note = "Chaque jour dans le quota fait monter ce pourcentage. Vise-le.";
   }
+  recEl.textContent = detail + " " + note;
 }
