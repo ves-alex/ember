@@ -198,14 +198,14 @@ function renderQuotaTrajectory() {
   $("#traj-current").textContent = "Quota actuel : " + current + " / jour";
   const nextEl = $("#traj-next");
   const goalEl = $("#traj-goal");
-  const activateBtn = $("#traj-activate");
-  // Bouton visible uniquement quand le moteur de réduction est éteint :
-  // c'est là qu'Ember cesse d'être un sevrage pour n'être qu'un compteur.
-  if (activateBtn) activateBtn.hidden = reduction > 0;
+  // Le stepper reflète toujours la valeur courante : réglable à la main,
+  // dans les deux sens, 0 inclus → aucune action à sens unique.
+  const valEl = $("#traj-redux-val");
+  if (valEl) valEl.textContent = reduction;
 
   if (reduction <= 0) {
     nextEl.textContent =
-      "Quota fixe : il ne baisse pas. Sans réduction, Ember compte mais ne te fait pas progresser vers l'arrêt.";
+      "Quota figé à " + current + "/jour. Monte la réduction pour qu'il baisse tout seul vers l'arrêt.";
     goalEl.textContent = "";
     return;
   }
@@ -237,13 +237,17 @@ function renderQuotaTrajectory() {
   goalEl.textContent = "À ce rythme, quota de 1/jour atteint le " + floorStr + ".";
 }
 
-// Active une réduction d'1/semaine depuis la carte Trajectoire (CTA quand le
-// moteur est éteint). merge-duplicates ne touche que `weekly_reduction`, le
-// reste du plan est préservé. app.js rafraîchit ensuite main + settings.
-export async function activateWeeklyReduction() {
-  const saved = await upsertQuitPlan({ weekly_reduction: 1 });
+// Ajuste la réduction hebdo de ±1 depuis le stepper de la carte Trajectoire.
+// Bornée [0, 10] : 0 = quota figé (réversible à tout moment). merge-duplicates
+// ne touche que `weekly_reduction`. app.js rafraîchit ensuite main + settings.
+export async function adjustWeeklyReduction(delta) {
+  if (!state.plan) return false;
+  const cur = state.plan.weekly_reduction || 0;
+  const next = Math.max(0, Math.min(10, cur + delta));
+  if (next === cur) return false;            // déjà à la borne : no-op
+  const saved = await upsertQuitPlan({ weekly_reduction: next });
   if (!saved) {
-    alert("Impossible d'activer la réduction. Vérifie ta connexion.");
+    alert("Impossible d'enregistrer. Vérifie ta connexion.");
     return false;
   }
   state.plan = saved;

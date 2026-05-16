@@ -326,7 +326,48 @@ p {
   font-weight: 600;
 }
 .btn-primary:hover { background: #ff9a55; }
-#traj-activate { margin-top: 12px; }
+
+/* Stepper réduction (carte Trajectoire) — réglage manuel réversible */
+.traj-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.traj-stepper-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.traj-stepper-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.step-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.step-btn:hover { border-color: var(--accent); }
+.step-btn:active { transform: scale(0.92); }
+.step-btn:disabled { opacity: 0.5; }
+.traj-redux-val {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
 
 .btn-ghost {
   background: transparent;

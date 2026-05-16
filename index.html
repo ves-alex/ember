@@ -207,9 +207,15 @@
         <p id="traj-current" class="cumul-line">—</p>
         <p id="traj-next" class="muted small"></p>
         <p id="traj-goal" class="muted small"></p>
-        <button id="traj-activate" class="btn btn-primary btn-block" type="button" hidden>
-          Activer une réduction d'1/semaine
-        </button>
+        <div class="traj-stepper">
+          <span class="traj-stepper-label">Réduction hebdomadaire</span>
+          <div class="traj-stepper-ctrl">
+            <button id="traj-dec" class="step-btn" type="button" aria-label="Diminuer la réduction">−</button>
+            <span id="traj-redux-val" class="traj-redux-val">0</span>
+            <button id="traj-inc" class="step-btn" type="button" aria-label="Augmenter la réduction">+</button>
+            <span class="muted small">clope(s) / semaine</span>
+          </div>
+        </div>
       </section>
 
       <section class="stat-card">

@@ -17,7 +17,7 @@ import {
 import {
   renderMain, startDelayTimer, handlePlusOne, closeTriggerModal,
 } from "./screens/main.js";
-import { renderStats, renderDailyChart, activateWeeklyReduction } from "./screens/stats.js";
+import { renderStats, renderDailyChart, adjustWeeklyReduction } from "./screens/stats.js";
 import { fillSettingsForm, saveSettings, exportJSON } from "./screens/settings.js";
 import {
   showOnboardingStep, getCurrentStep, setPickedMode, submitOnboarding,
@@ -123,19 +123,21 @@ function wireEvents() {
   });
   $("#btn-export").addEventListener("click", exportJSON);
 
-  // CTA carte Trajectoire : activer la réduction hebdo quand elle est à 0.
-  // stats.js fait l'upsert + re-render des stats ; on rafraîchit aussi le
-  // compteur (le quota influe sur les états warning) et le form Réglages.
-  $("#traj-activate").addEventListener("click", async () => {
-    const btn = $("#traj-activate");
-    btn.disabled = true;
-    const ok = await activateWeeklyReduction();
-    btn.disabled = false;
+  // Stepper carte Trajectoire : régler la réduction hebdo à la main, dans
+  // les deux sens (0 inclus = quota figé, totalement réversible). stats.js
+  // borne + upsert + re-render des stats ; on resync compteur et Réglages.
+  const stepReduction = async (delta) => {
+    const dec = $("#traj-dec"), inc = $("#traj-inc");
+    dec.disabled = inc.disabled = true;
+    const ok = await adjustWeeklyReduction(delta);
+    dec.disabled = inc.disabled = false;
     if (ok) {
       renderMain();
       fillSettingsForm();
     }
-  });
+  };
+  $("#traj-dec").addEventListener("click", () => stepReduction(-1));
+  $("#traj-inc").addEventListener("click", () => stepReduction(1));
 
   // Bottom nav
   $$(".nav-btn").forEach((btn) => {
