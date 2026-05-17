@@ -868,6 +868,21 @@ p {
   min-width: 0;            /* laisse les colonnes 1fr se compresser */
   background: var(--surface-2);
   border-radius: 2px;
+  cursor: pointer;
+}
+.heatmap-cell.is-selected {
+  outline: 2px solid var(--text);
+  outline-offset: -1px;
+}
+.heatmap-detail {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(var(--accent-rgb), 0.08);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
 }
 /* Vue heures-seules : une rangée unique. Case à hauteur fixe (pas de carré
    piloté par la hauteur de rangée) → 24 colonnes 1fr tiennent dans la carte. */

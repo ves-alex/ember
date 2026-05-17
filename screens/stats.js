@@ -281,9 +281,21 @@ function renderHeatmap() {
   placeholder.hidden = true;
   wrap.innerHTML = "";
 
-  const fmtTitle = (h, v) => {
-    const L = getLabels();
-    return pad2(h) + "h — " + v + " " + (v === 1 ? L.unit : L.unitPlural);
+  // Détail au tap (les tooltips `title` ne s'ouvrent pas au toucher sur
+  // mobile). Une seule case sélectionnée à la fois ; re-render = reset.
+  const detail = $("#heatmap-detail");
+  if (detail) detail.hidden = true;
+  const L = getLabels();
+  const fmtTitle = (h, v) => pad2(h) + "h — " + v + " " + (v === 1 ? L.unit : L.unitPlural);
+  const fmtAvg = (n) => n.toFixed(n < 1 ? 2 : 1).replace(".", ",");
+  const selectCell = (cell, text) => {
+    const prev = wrap.querySelector(".heatmap-cell.is-selected");
+    if (prev) prev.classList.remove("is-selected");
+    cell.classList.add("is-selected");
+    if (detail) {
+      detail.textContent = text;
+      detail.hidden = false;
+    }
   };
 
   if (days < HEATMAP_GRID_DAYS) {
@@ -311,6 +323,13 @@ function renderHeatmap() {
       cell.className = "heatmap-cell";
       cell.dataset.level = v === 0 ? 0 : Math.min(4, Math.ceil((v / max) * 4));
       cell.title = fmtTitle(h, v);
+      cell.onclick = () => {
+        const txt = v === 0
+          ? pad2(h) + "h — aucune " + L.unit + " à cette heure (sur " + days + " j)"
+          : pad2(h) + "h — en moyenne " + fmtAvg(v / days) + " " +
+            L.unitPlural + "/jour (" + v + " au total sur " + days + " j)";
+        selectCell(cell, txt);
+      };
       wrap.appendChild(cell);
     }
     // Classe dédiée : hauteur de case fixe + aspect-ratio désactivé, sinon
@@ -321,15 +340,19 @@ function renderHeatmap() {
     if (note) {
       note.hidden = false;
       note.textContent =
-        "Vue par heure. La grille jour × heure arrive vers " +
-        HEATMAP_GRID_DAYS + " jours, quand les motifs deviennent fiables.";
+        "Touche une heure pour voir ta moyenne. La grille jour × heure arrive vers " +
+        HEATMAP_GRID_DAYS + " jours.";
     }
     return;
   }
 
   // ── Grille jour × heure (7×24) ──
   wrap.classList.remove("heatmap--hours");
-  if (note) note.hidden = true;
+  if (note) {
+    note.hidden = false;
+    note.textContent = "Touche une case pour le détail (jour × heure).";
+  }
+  const dayNames = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
   const buckets = Array.from({ length: 7 }, () => Array(24).fill(0));
   for (const c of myCigs) {
     const t = new Date(c.smoked_at);
@@ -362,6 +385,10 @@ function renderHeatmap() {
       cell.className = "heatmap-cell";
       cell.dataset.level = level;
       cell.title = getLabels().heatmapCellTitle(dayLabels[d], h, v);
+      cell.onclick = () => selectCell(
+        cell,
+        dayNames[d] + " " + pad2(h) + "h — " + v + " " + (v === 1 ? L.unit : L.unitPlural)
+      );
       wrap.appendChild(cell);
     }
   }
