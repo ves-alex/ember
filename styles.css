@@ -865,8 +865,18 @@ p {
 }
 .heatmap-cell {
   aspect-ratio: 1;
+  min-width: 0;            /* laisse les colonnes 1fr se compresser */
   background: var(--surface-2);
   border-radius: 2px;
+}
+/* Vue heures-seules : une rangée unique. Case à hauteur fixe (pas de carré
+   piloté par la hauteur de rangée) → 24 colonnes 1fr tiennent dans la carte. */
+.heatmap--hours {
+  grid-template-rows: 16px 26px;
+}
+.heatmap--hours .heatmap-cell {
+  aspect-ratio: auto;
+  height: 26px;
 }
 .heatmap-cell[data-level="0"] { background: var(--surface-2); }
 .heatmap-cell[data-level="1"] { background: rgba(var(--accent-rgb), 0.2); }

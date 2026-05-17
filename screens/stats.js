@@ -313,7 +313,11 @@ function renderHeatmap() {
       cell.title = fmtTitle(h, v);
       wrap.appendChild(cell);
     }
-    wrap.style.gridTemplateRows = "16px 1fr";
+    // Classe dédiée : hauteur de case fixe + aspect-ratio désactivé, sinon
+    // les cases (carrées) prennent la hauteur de la rangée unique et
+    // débordent horizontalement. La grille 7×24 garde son comportement.
+    wrap.classList.add("heatmap--hours");
+    wrap.style.gridTemplateRows = "";
     if (note) {
       note.hidden = false;
       note.textContent =
@@ -324,6 +328,7 @@ function renderHeatmap() {
   }
 
   // ── Grille jour × heure (7×24) ──
+  wrap.classList.remove("heatmap--hours");
   if (note) note.hidden = true;
   const buckets = Array.from({ length: 7 }, () => Array(24).fill(0));
   for (const c of myCigs) {
