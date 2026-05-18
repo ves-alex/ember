@@ -18,11 +18,22 @@ import {
   renderMain, startDelayTimer, handlePlusOne, closeTriggerModal,
 } from "./screens/main.js";
 import { renderStats, renderDailyChart, adjustWeeklyReduction } from "./screens/stats.js";
-import { fillSettingsForm, saveSettings } from "./screens/settings.js";
+import { fillSettingsForm, saveSettings, syncModeFields } from "./screens/settings.js";
 import {
-  showOnboardingStep, getCurrentStep, setPickedMode, submitOnboarding,
+  showOnboardingStep, getCurrentStep, setPickedMode, setSubstitute, submitOnboarding,
 } from "./screens/onboarding.js";
-import { getLabels } from "./labels.js";
+import { getLabels, SUBSTITUTE_FORMS } from "./labels.js";
+
+// Remplit un <select> avec les formes substitut (source unique : labels.js).
+function populateFormSelect(sel) {
+  if (!sel || sel.options.length) return;
+  for (const [key, spec] of Object.entries(SUBSTITUTE_FORMS)) {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = spec.selectLabel;
+    sel.appendChild(opt);
+  }
+}
 
 // Applique les labels dépendant du mode dans l'UI globale. À appeler après
 // chaque changement de `state.plan.tracking_mode` (au boot, après un save
@@ -114,6 +125,9 @@ function wireEvents() {
     await signOut();
     showScreen("screen-auth");
   });
+  populateFormSelect($("#set-form"));
+  // Toggle live du bloc forme/nom quand on bascule de mode dans les Réglages.
+  $("#set-mode").addEventListener("change", syncModeFields);
   $("#btn-save-settings").addEventListener("click", async () => {
     const result = await saveSettings();
     if (result.ok && result.modeChanged) {
@@ -148,18 +162,40 @@ function wireEvents() {
     });
   });
 
-  // Onboarding — étape 1 : choix du mode (clic direct, pas de bouton Suivant)
+  // Onboarding — étape 1 : choix du mode
+  populateFormSelect($("#onb-form"));
+  const substitutConfig = $("#onb-substitut-config");
   $$(".onb-mode-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const mode = btn.dataset.mode;
-      // Imp. : on doit fixer state.plan.tracking_mode AVANT d'appeler getLabels(),
-      // sinon getLabels() retombe sur 'cigarette' par fallback. On simule un
-      // plan partiel le temps de l'onboarding pour que les labels suivants
-      // soient cohérents.
-      state.plan = { tracking_mode: mode };
-      setPickedMode(mode, getLabels());
-      showOnboardingStep(2);
+      $$(".onb-mode-btn").forEach((b) =>
+        b.classList.toggle("is-active", b === btn));
+      if (mode === "cigarette") {
+        if (substitutConfig) substitutConfig.hidden = true;
+        // state.plan fixé AVANT getLabels() sinon fallback 'cigarette'.
+        state.plan = { tracking_mode: "cigarette" };
+        setPickedMode("cigarette", getLabels());
+        showOnboardingStep(2);
+      } else {
+        // Substitut : on révèle le sous-panneau (forme + nom), pas d'avance
+        // tant que l'user n'a pas confirmé via « Continuer ».
+        if (substitutConfig) substitutConfig.hidden = false;
+      }
     });
+  });
+
+  // Onboarding — confirmation de la forme substitut
+  $("#btn-onb-substitut").addEventListener("click", () => {
+    const form = $("#onb-form").value || "pastille";
+    const label = $("#onb-label").value.trim();
+    // state.plan posé AVANT getLabels() pour que le bundle résolve la forme.
+    state.plan = {
+      tracking_mode: "pastille",
+      substitute_form: form,
+      substitute_label: label || null,
+    };
+    setSubstitute(form, label, getLabels());
+    showOnboardingStep(2);
   });
 
   // Onboarding — boutons Suivant / Retour

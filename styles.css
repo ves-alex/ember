@@ -507,8 +507,12 @@ p {
   font-size: 0.9rem;
 }
 
-/* Settings : select #set-mode */
-#set-mode {
+/* Settings/onboarding : select de mode/forme + champ nom libre */
+#set-mode,
+#set-form,
+#onb-form,
+#set-label,
+#onb-label {
   font-size: 1rem;
   padding: 10px 12px;
   background: var(--surface);
@@ -517,6 +521,26 @@ p {
   color: var(--text);
   width: 100%;
   max-width: 280px;
+}
+#set-substitut-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#set-substitut-row label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.onb-substitut-config {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+.onb-substitut-config label {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 /* ───────── Header app ───────── */

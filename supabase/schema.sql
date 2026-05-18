@@ -21,6 +21,7 @@ create index cigarettes_user_smoked_idx
 create table public.quit_plan (
   user_id              uuid primary key references auth.users(id) on delete cascade,
   daily_quota          int not null default 15,
+  baseline_per_day     int,                       -- conso de référence figée (cf. migration 2026-05-15)
   min_delay_minutes    int not null default 60,
   weekly_reduction     int not null default 1,    -- décrément automatique du quota tous les 7 jours
   price_per_pack       numeric(6,2) default 12.50,
@@ -28,6 +29,8 @@ create table public.quit_plan (
   start_date           date not null default current_date,
   tracking_mode        text not null default 'cigarette'
                        check (tracking_mode in ('cigarette', 'pastille')),
+  substitute_form      text,                      -- forme substitut (cf. migration 2026-05-18) ; NULL → 'pastille'
+  substitute_label     text,                      -- nom de produit libre, optionnel
   updated_at           timestamptz not null default now()
 );
 

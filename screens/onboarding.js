@@ -13,6 +13,8 @@ import { upsertQuitPlan } from "../db.js";
 
 let onbStep = 1;
 let pickedMode = "cigarette";
+let pickedForm = "pastille";   // pertinent seulement si pickedMode === 'pastille'
+let pickedLabel = "";          // nom de produit libre, optionnel
 
 const TOTAL_STEPS = 4;
 
@@ -37,37 +39,47 @@ export function getPickedMode() {
   return pickedMode;
 }
 
-// Set le mode choisi à l'étape 1. Met aussi à jour les valeurs et labels
-// des étapes suivantes en utilisant les defaults du bundle correspondant.
+// Pré-remplit les inputs + titres des étapes 2-4 selon le bundle résolu.
+function applyDefaults(modeTexts) {
+  if (!modeTexts) return;
+  $("#onb-baseline").value = modeTexts.quotaDefault;
+  $("#onb-quota").value = modeTexts.quotaDefault;
+  $("#onb-delay").value = modeTexts.delayDefault;
+  $("#onb-price").value = modeTexts.priceDefault;
+  $("#onb-cigs-per-pack").value = modeTexts.unitsPerBoxDefault;
+
+  const titles = [
+    { sel: '.onb-step[data-step="2"] h2', text: modeTexts.onbStep2Title },
+    { sel: '.onb-step[data-step="2"] p.muted', text: modeTexts.onbStep2Sub },
+    { sel: '.onb-step[data-step="3"] h2', text: modeTexts.onbStep3Title },
+    { sel: '.onb-step[data-step="3"] p.muted', text: modeTexts.onbStep3Sub },
+    { sel: '.onb-step[data-step="4"] h2', text: modeTexts.onbStep4Title },
+    { sel: '.onb-step[data-step="4"] p.muted', text: modeTexts.onbStep4Sub },
+  ];
+  for (const { sel, text } of titles) {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = text;
+  }
+  const cigsLabel = document.querySelector('.onb-step[data-step="4"] .onb-secondary label');
+  if (cigsLabel) cigsLabel.textContent = modeTexts.unitsPerBoxLabel;
+}
+
+// Mode cigarette : choisi directement à l'étape 1.
 export function setPickedMode(mode, modeTexts) {
   pickedMode = mode;
   $$(".onb-mode-btn").forEach((b) => b.classList.toggle("is-active", b.dataset.mode === mode));
+  applyDefaults(modeTexts);
+}
 
-  // Préremplit les inputs des étapes 2-4 avec les defaults du mode
-  if (modeTexts) {
-    $("#onb-baseline").value = modeTexts.quotaDefault;
-    $("#onb-quota").value = modeTexts.quotaDefault;
-    $("#onb-delay").value = modeTexts.delayDefault;
-    $("#onb-price").value = modeTexts.priceDefault;
-    $("#onb-cigs-per-pack").value = modeTexts.unitsPerBoxDefault;
-
-    // Adapte les titres/sous-titres/units des étapes 2-4
-    const titles = [
-      { sel: '.onb-step[data-step="2"] h2', text: modeTexts.onbStep2Title },
-      { sel: '.onb-step[data-step="2"] p.muted', text: modeTexts.onbStep2Sub },
-      { sel: '.onb-step[data-step="3"] h2', text: modeTexts.onbStep3Title },
-      { sel: '.onb-step[data-step="3"] p.muted', text: modeTexts.onbStep3Sub },
-      { sel: '.onb-step[data-step="4"] h2', text: modeTexts.onbStep4Title },
-      { sel: '.onb-step[data-step="4"] p.muted', text: modeTexts.onbStep4Sub },
-    ];
-    for (const { sel, text } of titles) {
-      const el = document.querySelector(sel);
-      if (el) el.textContent = text;
-    }
-    // Label "Cigarettes par paquet" / "Pastilles par boîte" pour l'input du bas
-    const cigsLabel = document.querySelector('.onb-step[data-step="4"] .onb-secondary label');
-    if (cigsLabel) cigsLabel.textContent = modeTexts.unitsPerBoxLabel;
-  }
+// Famille substitut : forme + nom libre choisis dans le sous-panneau de
+// l'étape 1. `modeTexts` doit être le bundle DÉJÀ résolu pour cette forme
+// (l'appelant a mis state.plan.substitute_form avant d'appeler getLabels()).
+export function setSubstitute(form, label, modeTexts) {
+  pickedMode = "pastille";
+  pickedForm = form;
+  pickedLabel = (label || "").trim();
+  $$(".onb-mode-btn").forEach((b) => b.classList.toggle("is-active", b.dataset.mode === "pastille"));
+  applyDefaults(modeTexts);
 }
 
 // Sauvegarde le plan rempli par l'onboarding et le renvoie au caller
@@ -88,5 +100,9 @@ export async function submitOnboarding() {
     start_date: isoDate(new Date()),
     tracking_mode: pickedMode,
   };
+  if (pickedMode === "pastille") {
+    plan.substitute_form = pickedForm;
+    plan.substitute_label = pickedLabel || null;
+  }
   return await upsertQuitPlan(plan);
 }

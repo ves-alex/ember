@@ -76,9 +76,17 @@
             <span class="onb-mode-sub">Sevrage tabagique progressif.</span>
           </button>
           <button type="button" class="onb-mode-btn" data-mode="pastille">
-            <span class="onb-mode-title">Pastilles</span>
-            <span class="onb-mode-sub">Substituts nicotiniques (Nicorette…).</span>
+            <span class="onb-mode-title">Substituts</span>
+            <span class="onb-mode-sub">Pharmacie : gomme, pastille, spray, inhaleur.</span>
           </button>
+        </div>
+
+        <div id="onb-substitut-config" class="onb-substitut-config" hidden>
+          <label for="onb-form">Ta forme</label>
+          <select id="onb-form"></select>
+          <label for="onb-label">Nom de ton produit (optionnel)</label>
+          <input id="onb-label" type="text" maxlength="24" placeholder="ex. Nicopass 1,5 mg" />
+          <button id="btn-onb-substitut" class="btn btn-primary btn-block" type="button">Continuer</button>
         </div>
       </div>
 
@@ -270,10 +278,16 @@
           <span id="set-mode-label">Tu trackes</span>
           <select id="set-mode">
             <option value="cigarette">Cigarettes</option>
-            <option value="pastille">Pastilles (Nicorette…)</option>
+            <option value="pastille">Substituts (pharmacie)</option>
           </select>
           <span class="muted small">Bascule entre les deux modes. Les unités, les valeurs par défaut et la section économies s'adaptent.</span>
         </label>
+        <div id="set-substitut-row" hidden>
+          <label for="set-form">Forme du substitut</label>
+          <select id="set-form"></select>
+          <label for="set-label">Nom de ton produit (optionnel)</label>
+          <input id="set-label" type="text" maxlength="24" placeholder="ex. Nicopass 1,5 mg" />
+        </div>
       </section>
 
       <section class="setting-group">
