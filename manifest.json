@@ -1,7 +1,7 @@
 {
   "name": "Ember — tracker nicotine",
   "short_name": "Ember",
-  "description": "Suivre sa consommation de cigarettes ou de substituts Nicorette pour arrêter progressivement.",
+  "description": "Suivre sa consommation de cigarettes ou de substituts nicotiniques (gomme, pastille, spray, inhaleur) pour réduire progressivement.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

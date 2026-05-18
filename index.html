@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css?v=11" />
-  <title>Ember — tracker de cigarettes</title>
+  <title>Ember — tracker de nicotine</title>
 </head>
 <body>
 
@@ -51,7 +51,7 @@
         <circle cx="256" cy="366" r="28" fill="#ff8c42"/>
       </svg>
       <h1>Ember</h1>
-      <p class="tagline">Reprendre la main, une clope à la fois.</p>
+      <p class="tagline">Reprendre la main, une prise à la fois.</p>
       <button id="btn-google" class="btn btn-primary btn-google" type="button">
         <span class="g-icon" aria-hidden="true">G</span>
         Continuer avec Google
@@ -91,7 +91,7 @@
       </div>
 
       <div class="onb-step" data-step="2" hidden>
-        <h2>Combien de clopes par jour aujourd'hui&nbsp;?</h2>
+        <h2>Combien par jour aujourd'hui&nbsp;?</h2>
         <p class="muted">Sois honnête, c'est ta référence pour mesurer tes progrès.</p>
         <input id="onb-baseline" type="number" inputmode="numeric" min="1" max="60" value="15" />
         <span class="unit">par jour</span>
@@ -103,19 +103,19 @@
       </div>
 
       <div class="onb-step" data-step="3" hidden>
-        <h2>Quel délai minimum entre deux clopes&nbsp;?</h2>
+        <h2>Quel délai minimum entre deux prises&nbsp;?</h2>
         <p class="muted">Un timer t'aidera à attendre. Tu peux toujours passer outre.</p>
         <input id="onb-delay" type="number" inputmode="numeric" min="5" max="240" step="5" value="60" />
         <span class="unit">minutes</span>
       </div>
 
       <div class="onb-step" data-step="4" hidden>
-        <h2>Prix d'un paquet&nbsp;?</h2>
+        <h2>Prix d'une boîte&nbsp;?</h2>
         <p class="muted">Pour mesurer ce que tu économises au fil du temps.</p>
         <input id="onb-price" type="number" inputmode="decimal" min="1" max="50" step="0.10" value="12.50" />
         <span class="unit">€</span>
         <div class="onb-secondary">
-          <label>Cigarettes par paquet</label>
+          <label>Unités par boîte</label>
           <input id="onb-cigs-per-pack" type="number" inputmode="numeric" min="5" max="40" value="20" />
         </div>
       </div>
@@ -142,7 +142,7 @@
         <span class="counter-divider">/</span>
         <span id="counter-quota" class="counter-quota">15</span>
       </div>
-      <p id="counter-status" class="counter-status">Aucune clope aujourd'hui. Tiens bon.</p>
+      <p id="counter-status" class="counter-status">Aucune prise aujourd'hui.</p>
 
       <div class="delay">
         <p id="delay-label" class="delay-label">Disponible</p>
@@ -151,7 +151,7 @@
 
       <button id="btn-plus-one" class="btn-plus-one" type="button" aria-label="Enregistrer une cigarette">
         <span class="plus-symbol">+</span>
-        <span class="plus-label">1 clope</span>
+        <span class="plus-label">+1</span>
       </button>
 
       <div class="chips">
@@ -221,14 +221,14 @@
             <button id="traj-dec" class="step-btn" type="button" aria-label="Diminuer la réduction">−</button>
             <span id="traj-redux-val" class="traj-redux-val">0</span>
             <button id="traj-inc" class="step-btn" type="button" aria-label="Augmenter la réduction">+</button>
-            <span class="muted small">clope(s) / semaine</span>
+            <span class="muted small">par semaine</span>
           </div>
         </div>
       </section>
 
       <section class="stat-card">
         <h3>Heatmap des heures</h3>
-        <p class="muted small">Quelles heures de la journée te font allumer une clope.</p>
+        <p class="muted small">À quelles heures de la journée tu consommes le plus.</p>
         <div id="heatmap" class="heatmap"></div>
         <p id="heatmap-placeholder" class="placeholder" hidden>Disponible après 7 jours d'utilisation, le temps d'avoir de quoi montrer un motif.</p>
         <p id="heatmap-detail" class="heatmap-detail" hidden></p>
@@ -300,7 +300,7 @@
         <label>
           <span id="set-baseline-label">Conso de référence (avant de réduire)</span>
           <input id="set-baseline" type="number" inputmode="numeric" min="1" max="60" />
-          <span class="muted small">Ce que tu fumais par jour <em>avant</em> de chercher à réduire. Reste figé : c'est le point de comparaison pour tes économies et tes clopes évitées. Ex. : 20 si tu fumais un paquet.</span>
+          <span class="muted small">Ce que tu consommais par jour <em>avant</em> de chercher à réduire. Reste figé : c'est le repère qui mesure tes progrès.</span>
         </label>
         <label>
           Quota journalier
@@ -310,23 +310,23 @@
         <label>
           Délai minimum (min)
           <input id="set-delay" type="number" inputmode="numeric" min="5" max="240" step="5" />
-          <span class="muted small">Temps minimum conseillé entre deux clopes. Un compte à rebours t'aide à patienter — tu peux toujours passer outre.</span>
+          <span class="muted small">Temps minimum conseillé entre deux prises. Un compte à rebours t'aide à patienter — tu peux toujours passer outre.</span>
         </label>
         <label>
           <span id="set-weekly-label">Réduction hebdomadaire (unités/semaine)</span>
           <input id="set-weekly" type="number" inputmode="numeric" min="0" max="10" />
-          <span class="muted small">Combien de clopes l'app retire du quota chaque semaine, automatiquement. Ex. : 1 = le quota baisse de 1 tous les 7 jours. Mets 0 pour le figer (la référence, elle, ne bouge jamais).</span>
+          <span class="muted small">Combien l'app retire du quota chaque semaine, automatiquement. Ex. : 1 = le quota baisse de 1 tous les 7 jours. Mets 0 pour le figer (la référence, elle, ne bouge jamais).</span>
         </label>
       </section>
 
       <section class="setting-group">
         <h3>Prix</h3>
         <label>
-          <span id="set-price-label">Prix par paquet (€)</span>
+          <span id="set-price-label">Prix par boîte (€)</span>
           <input id="set-price" type="number" inputmode="decimal" min="1" max="50" step="0.10" />
         </label>
         <label>
-          <span id="set-units-per-box-label">Cigarettes par paquet</span>
+          <span id="set-units-per-box-label">Unités par boîte</span>
           <input id="set-cigs-per-pack" type="number" inputmode="numeric" min="5" max="40" />
         </label>
       </section>

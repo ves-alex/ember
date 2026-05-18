@@ -10,6 +10,9 @@ import { effectiveQuota, effectiveBaseline, quotaOnDate } from "./main.js";
 import { getLabels } from "../labels.js";
 import { upsertQuitPlan } from "../db.js";
 
+// Première lettre en majuscule (légende de graphe : « Clopes »/« Gommes »…).
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
 export function renderStats() {
   // Masque ou révèle la section "Économies" selon le mode courant. En mode
   // pastille, les substituts coûtent → afficher des "économies" serait trompeur.
@@ -136,7 +139,7 @@ export function renderDailyChart() {
       labels,
       datasets: [
         {
-          label: "Clopes",
+          label: cap(getLabels().unitPlural),
           data: counts,
           backgroundColor: colors,
           borderRadius: 3,
@@ -425,7 +428,8 @@ function renderTriggerList() {
   if (covEl) {
     covEl.hidden = false;
     covEl.textContent =
-      taggedTotal + "/" + allCigs.length + " clopes taguées — les % portent sur les taguées.";
+      taggedTotal + "/" + allCigs.length + " " + getLabels().unitPlural +
+      " taguées — les % portent sur les taguées.";
   }
 
   // Conseil ciblé sur le trigger n°1 : c'est là que l'app crée de la valeur,
