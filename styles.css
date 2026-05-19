@@ -83,6 +83,31 @@ input:focus {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+#coach-input {
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+#coach-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+#coach-out {
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
 h1, h2, h3 {
   margin: 0;
   font-weight: 600;
