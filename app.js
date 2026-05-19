@@ -136,6 +136,26 @@ function wireEvents() {
     }
   });
 
+  // Bouton de test (dev) : appelle le concierge déployé (Edge Function)
+  // qui relaie la question à Claude. Sera remplacé par le vrai coach en Phase C.
+  $("#btn-test-coach").addEventListener("click", async () => {
+    const out = $("#coach-test-out");
+    out.textContent = "Le coach réfléchit…";
+    try {
+      const res = await fetch(SUPABASE_URL + "/functions/v1/hello", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "Donne-moi une astuce courte et concrète pour tenir là, maintenant.",
+        }),
+      });
+      const data = await res.json();
+      out.textContent = data.reponse || ("Erreur : " + (data.erreur || "réponse inattendue"));
+    } catch (e) {
+      out.textContent = "Erreur réseau : " + e;
+    }
+  });
+
   // Stepper carte Trajectoire : régler la réduction hebdo à la main, dans
   // les deux sens (0 inclus = quota figé, totalement réversible). stats.js
   // borne + upsert + re-render des stats ; on resync compteur et Réglages.
