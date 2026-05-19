@@ -1,73 +1,86 @@
-// Le concierge : reçoit une question depuis Ember, va demander à Claude
-// (avec la clé secrète, qui ne sort JAMAIS du serveur), renvoie la réponse.
+// Le concierge, version RAG (B4) : il va chercher les 3 fiches anti-craving
+// les plus proches du sens de la question, puis demande à Claude de répondre
+// en s'appuyant dessus. La clé Claude ne sort jamais du serveur.
 
 import "@supabase/functions-js/edge-runtime.d.ts"
 import Anthropic from "@anthropic-ai/sdk"
 
-// CORS : la liste des en-têtes qui disent au navigateur
-// "j'autorise une page d'un autre site à me parler".
 const enTetesCORS = {
-  "Access-Control-Allow-Origin": "*", // on resserrera plus tard à l'URL d'Ember
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
+// Coordonnées publiques (déjà publiques dans state.js) : chemin de lecture.
+const SUPABASE_URL = "https://akoodxuhhahhvhkvkwwu.supabase.co"
+const PUBLIC_KEY = "sb_publishable_VHjPBsTKF69i5hQ5C6DOcw_UxtWeNmw"
+
+// Moteur d'embedding intégré de Supabase (même modèle gte-small que les fiches).
+const moteurSens = new Supabase.ai.Session("gte-small")
+
+function repondre(corps: unknown, status = 200) {
+  return new Response(JSON.stringify(corps), {
+    status,
+    headers: { ...enTetesCORS, "Content-Type": "application/json" },
+  })
+}
+
 Deno.serve(async (req) => {
-  // 1. Le navigateur envoie d'abord une requête "OPTIONS" pour demander
-  //    la permission (le pré-vol / preflight). On répond juste "ok, tu peux".
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: enTetesCORS })
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: enTetesCORS })
 
   try {
-    // 2. On lit la question envoyée par Ember.
     const { question } = await req.json()
-    if (!question) {
-      return new Response(
-        JSON.stringify({ erreur: "Aucune question fournie." }),
-        { status: 400, headers: { ...enTetesCORS, "Content-Type": "application/json" } },
-      )
-    }
+    if (!question) return repondre({ erreur: "Aucune question fournie." }, 400)
 
-    // 3. On sort la clé secrète du "tiroir fermé" (variable d'environnement).
-    //    Elle n'est écrite NULLE PART dans ce fichier.
-    const cleSecrete = Deno.env.get("ANTHROPIC_API_KEY")
-    if (!cleSecrete) {
-      return new Response(
-        JSON.stringify({ erreur: "Clé API absente côté serveur." }),
-        { status: 500, headers: { ...enTetesCORS, "Content-Type": "application/json" } },
-      )
-    }
+    const cleClaude = Deno.env.get("ANTHROPIC_API_KEY")
+    if (!cleClaude) return repondre({ erreur: "Clé API absente côté serveur." }, 500)
 
-    // 4. On prépare le client Claude avec cette clé.
-    const claude = new Anthropic({ apiKey: cleSecrete })
+    // 1. Coordonnées de sens de la question (moteur intégré Supabase).
+    const vecteur = await moteurSens.run(question, {
+      mean_pool: true,
+      normalize: true,
+    })
 
-    // 5. On appelle Claude. C'est ici que la "vraie" magie a lieu.
+    // 2. On demande au bibliothécaire les 3 fiches les plus proches.
+    const rechRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/match_strategies", {
+      method: "POST",
+      headers: {
+        apikey: PUBLIC_KEY,
+        Authorization: "Bearer " + PUBLIC_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query_embedding: "[" + Array.from(vecteur).join(",") + "]",
+        match_count: 3,
+      }),
+    })
+    const fiches = await rechRes.json()
+    const fichesTexte = Array.isArray(fiches)
+      ? fiches.map((f) => `- ${f.titre} : ${f.contenu}`).join("\n")
+      : "(aucune fiche disponible)"
+
+    // 3. L'examen avec antisèche : on colle les fiches dans la consigne.
+    const claude = new Anthropic({ apiKey: cleClaude })
     const reponseClaude = await claude.messages.create({
-      model: "claude-haiku-4-5", // rapide et économe, choisi pour le mois 2
-      max_tokens: 1024, // longueur max de la réponse (court pour ce test)
-      // cache_control : si le contexte devient gros plus tard (RAG au mois 2),
-      // Claude réutilisera la partie stable au lieu de tout relire → moins cher.
-      // Inoffensif tant que c'est petit, utile dès que ça grandit.
+      model: "claude-haiku-4-5",
+      max_tokens: 1024,
       cache_control: { type: "ephemeral" },
-      system: "Tu es un coach bienveillant qui aide à arrêter de fumer. Réponds en français, court et concret.",
+      system:
+        "Tu es un coach bienveillant qui aide à arrêter de fumer. " +
+        "Réponds en français, court et concret. " +
+        "Appuie-toi en priorité sur les fiches fournies ci-dessous ; " +
+        "tu peux les reformuler et les adapter à la situation, mais reste dans leur esprit.\n\n" +
+        "Fiches anti-craving pertinentes :\n" + fichesTexte,
       messages: [{ role: "user", content: question }],
     })
 
-    // 6. La réponse de Claude est une liste de "blocs". On prend le texte.
     const texte = reponseClaude.content
-      .filter((bloc) => bloc.type === "text")
-      .map((bloc) => bloc.text)
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
       .join("\n")
 
-    return new Response(JSON.stringify({ reponse: texte }), {
-      headers: { ...enTetesCORS, "Content-Type": "application/json" },
-    })
+    return repondre({ reponse: texte, fiches_utilisees: Array.isArray(fiches) ? fiches.map((f) => f.titre) : [] })
   } catch (erreur) {
-    // Filet de sécurité : si quoi que ce soit casse, on renvoie un message clair.
-    return new Response(
-      JSON.stringify({ erreur: String(erreur) }),
-      { status: 500, headers: { ...enTetesCORS, "Content-Type": "application/json" } },
-    )
+    return repondre({ erreur: String(erreur) }, 500)
   }
 })
