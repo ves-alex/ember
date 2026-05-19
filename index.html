@@ -337,9 +337,11 @@
       </section>
 
       <section class="setting-group">
-        <h3>Coach IA (test dev)</h3>
-        <button id="btn-test-coach" class="btn btn-ghost" type="button">Tester le coach</button>
-        <p id="coach-test-out" class="muted small" aria-live="polite"></p>
+        <h3>Coach</h3>
+        <p class="muted small">Décris ce que tu ressens là, maintenant. Le coach te répond avec une technique adaptée.</p>
+        <textarea id="coach-input" rows="3" placeholder="Ex : je suis stressé et l'envie monte fort…"></textarea>
+        <button id="btn-coach-send" class="btn btn-primary btn-block" type="button">Demander au coach</button>
+        <p id="coach-out" class="muted small" aria-live="polite" style="white-space:pre-wrap"></p>
       </section>
 
       <section class="setting-group">
@@ -414,7 +416,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Logique appli (modules ES6 — voir app.js + state/utils/supabase/db/transitions/screens) -->
-  <script type="module" src="app.js?v=27"></script>
+  <script type="module" src="app.js?v=36"></script>
 
   <!-- Service worker + auto-reload sur nouvelle version -->
   <script>

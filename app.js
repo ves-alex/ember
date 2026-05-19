@@ -136,23 +136,30 @@ function wireEvents() {
     }
   });
 
-  // Bouton de test (dev) : appelle le concierge déployé (Edge Function)
-  // qui relaie la question à Claude. Sera remplacé par le vrai coach en Phase C.
-  $("#btn-test-coach").addEventListener("click", async () => {
-    const out = $("#coach-test-out");
+  // Coach : envoie la situation décrite à l'agent déployé (Edge Function).
+  $("#btn-coach-send").addEventListener("click", async () => {
+    const input = $("#coach-input");
+    const out = $("#coach-out");
+    const question = input.value.trim();
+    if (!question) {
+      out.textContent = "Écris d'abord ce que tu ressens.";
+      return;
+    }
+    const btn = $("#btn-coach-send");
+    btn.disabled = true;
     out.textContent = "Le coach réfléchit…";
     try {
       const res = await fetch(SUPABASE_URL + "/functions/v1/hello", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: "Donne-moi une astuce courte et concrète pour tenir là, maintenant.",
-        }),
+        body: JSON.stringify({ question }),
       });
       const data = await res.json();
       out.textContent = data.reponse || ("Erreur : " + (data.erreur || "réponse inattendue"));
     } catch (e) {
       out.textContent = "Erreur réseau : " + e;
+    } finally {
+      btn.disabled = false;
     }
   });
 
