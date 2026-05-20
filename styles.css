@@ -354,7 +354,9 @@ p {
   color: #1a1208;
   font-weight: 600;
 }
-.btn-primary:hover { background: #ff9a55; }
+/* Hover éclairci dynamiquement (orange OU vert) au lieu d'une couleur en
+   dur, sinon le bouton reste orange en mode pastille au survol/tap. */
+.btn-primary:hover { background: color-mix(in srgb, var(--accent) 82%, white); }
 
 /* Stepper réduction (carte Trajectoire) — réglage manuel réversible */
 .traj-stepper {
