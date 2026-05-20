@@ -38,6 +38,10 @@ body[data-mode="pastille"] {
   --logo-warm-light: #d6eed5;
   --logo-warm-mid: #aedaab;
   --logo-glow: #e6f5e3;
+  /* Warning jaune-paille pour rester chaud sans tirer vers l'orange du
+     thème cigarette (le compteur en approche de quota et le delay-label
+     « pending » consomment cette var). --danger reste rouge en universel. */
+  --warning: #d4b94e;
 }
 
 * {

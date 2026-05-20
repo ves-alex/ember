@@ -8,7 +8,7 @@
 // qui appelle ensuite enterApp() une fois le plan sauvegardé (évite une
 // dépendance circulaire onboarding ↔ app).
 
-import { $, $$, isoDate } from "../utils.js";
+import { $, $$, isoDate, parseIntOr, parseFloatOr } from "../utils.js";
 import { upsertQuitPlan } from "../db.js";
 
 let onbStep = 1;
@@ -86,11 +86,11 @@ export function setSubstitute(form, label, modeTexts) {
 // (null si erreur). Ne touche pas au state ni à la navigation : c'est
 // app.js qui décide quoi faire ensuite.
 export async function submitOnboarding() {
-  const baseline = parseInt($("#onb-baseline").value, 10) || 15;
+  const baseline = parseIntOr($("#onb-baseline").value, 15);
   // Le quota saisi ne peut pas dépasser la conso de référence : viser
   // au-dessus de ce qu'on fume déjà n'a pas de sens pour un sevrage.
-  const quota = Math.min(parseInt($("#onb-quota").value, 10) || baseline, baseline);
-  const delay = parseInt($("#onb-delay").value, 10) || 60;
+  const quota = Math.min(parseIntOr($("#onb-quota").value, baseline), baseline);
+  const delay = parseIntOr($("#onb-delay").value, 60);
   // À la création, les deux modes héritent des mêmes valeurs : si l'user
   // switche plus tard, il trouvera une config plausible au lieu d'un mode
   // vide. Il pourra ensuite ajuster séparément depuis les réglages.
@@ -103,8 +103,8 @@ export async function submitOnboarding() {
     pastille_min_delay_minutes: delay,
     cigarette_weekly_reduction: 1,
     pastille_weekly_reduction: 1,
-    price_per_pack: parseFloat($("#onb-price").value.replace(",", ".")) || 12.5,
-    cigs_per_pack: parseInt($("#onb-cigs-per-pack").value, 10) || 20,
+    price_per_pack: parseFloatOr($("#onb-price").value.replace(",", "."), 12.5),
+    cigs_per_pack: parseIntOr($("#onb-cigs-per-pack").value, 20),
     start_date: isoDate(new Date()),
     tracking_mode: pickedMode,
   };

@@ -25,3 +25,15 @@ export function daysBetween(a, b) {
   const ms = startOfDay(b) - startOfDay(a);
   return Math.round(ms / 86400000);
 }
+
+// parseInt / parseFloat qui acceptent 0 comme valeur valide. Le fallback
+// n'est appliqué qu'en cas de NaN (champ vide, texte non numérique).
+// Évite le piège `parseFloat(v) || X` où 0 retombait sur X car falsy.
+export function parseIntOr(value, fallback) {
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+export function parseFloatOr(value, fallback) {
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : fallback;
+}

@@ -1,7 +1,7 @@
 // Écran réglages : édition du plan.
 
 import { state } from "../state.js";
-import { $ } from "../utils.js";
+import { $, parseIntOr, parseFloatOr } from "../utils.js";
 import { upsertQuitPlan } from "../db.js";
 import { getCurrentMode, getCurrentSubstituteForm } from "../labels.js";
 
@@ -36,8 +36,8 @@ function fillModeFields(mode) {
 export function fillSettingsForm() {
   if (!state.plan) return;
   $("#set-mode").value = getCurrentMode();
-  $("#set-price").value = state.plan.price_per_pack || 12.5;
-  $("#set-cigs-per-pack").value = state.plan.cigs_per_pack || 20;
+  $("#set-price").value = state.plan.price_per_pack ?? 12.5;
+  $("#set-cigs-per-pack").value = state.plan.cigs_per_pack ?? 20;
   $("#set-form").value = getCurrentSubstituteForm();
   $("#set-label").value = state.plan.substitute_label || "";
   syncModeFields();   // remplit aussi les 4 champs par-mode
@@ -68,10 +68,10 @@ export async function switchTrackingMode(newMode) {
 export async function saveSettings() {
   const previousMode = getCurrentMode();
   const newMode = $("#set-mode").value || "cigarette";
-  const quota = parseInt($("#set-quota").value, 10) || 15;
-  const baseline = parseInt($("#set-baseline").value, 10) || quota;
-  const delay = parseInt($("#set-delay").value, 10) || 60;
-  const weekly = parseInt($("#set-weekly").value, 10) || 0;
+  const quota = parseIntOr($("#set-quota").value, 15);
+  const baseline = parseIntOr($("#set-baseline").value, quota);
+  const delay = parseIntOr($("#set-delay").value, 60);
+  const weekly = parseIntOr($("#set-weekly").value, 0);
   // Les 4 champs réglables sont écrits dans les colonnes du mode visé
   // uniquement : l'autre mode reste intact côté DB. Les champs partagés
   // (prix, paquet, mode courant, forme/nom du substitut) sont écrits
@@ -81,8 +81,8 @@ export async function saveSettings() {
     [`${newMode}_baseline_per_day`]: baseline,
     [`${newMode}_min_delay_minutes`]: delay,
     [`${newMode}_weekly_reduction`]: weekly,
-    price_per_pack: parseFloat($("#set-price").value.replace(",", ".")) || 12.5,
-    cigs_per_pack: parseInt($("#set-cigs-per-pack").value, 10) || 20,
+    price_per_pack: parseFloatOr($("#set-price").value.replace(",", "."), 12.5),
+    cigs_per_pack: parseIntOr($("#set-cigs-per-pack").value, 20),
     tracking_mode: newMode,
   };
   // Forme + nom libre seulement en mode substitut. merge-duplicates ne
