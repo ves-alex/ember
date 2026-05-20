@@ -112,7 +112,7 @@
       <div class="onb-step" data-step="4" hidden>
         <h2>Prix d'une boîte&nbsp;?</h2>
         <p class="muted">Pour mesurer ce que tu économises au fil du temps.</p>
-        <input id="onb-price" type="number" inputmode="decimal" min="1" max="50" step="0.10" value="12.50" />
+        <input id="onb-price" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" value="12.50" />
         <span class="unit">€</span>
         <div class="onb-secondary">
           <label>Unités par boîte</label>
@@ -323,7 +323,7 @@
         <h3>Prix</h3>
         <label>
           <span id="set-price-label">Prix par boîte (€)</span>
-          <input id="set-price" type="number" inputmode="decimal" min="1" max="50" step="0.10" />
+          <input id="set-price" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" />
         </label>
         <label>
           <span id="set-units-per-box-label">Unités par boîte</span>

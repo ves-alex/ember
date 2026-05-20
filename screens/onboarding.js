@@ -90,12 +90,20 @@ export async function submitOnboarding() {
   // Le quota saisi ne peut pas dépasser la conso de référence : viser
   // au-dessus de ce qu'on fume déjà n'a pas de sens pour un sevrage.
   const quota = Math.min(parseInt($("#onb-quota").value, 10) || baseline, baseline);
+  const delay = parseInt($("#onb-delay").value, 10) || 60;
+  // À la création, les deux modes héritent des mêmes valeurs : si l'user
+  // switche plus tard, il trouvera une config plausible au lieu d'un mode
+  // vide. Il pourra ensuite ajuster séparément depuis les réglages.
   const plan = {
-    baseline_per_day: baseline,
-    daily_quota: quota,
-    min_delay_minutes: parseInt($("#onb-delay").value, 10) || 60,
-    weekly_reduction: 1,
-    price_per_pack: parseFloat($("#onb-price").value) || 12.5,
+    cigarette_daily_quota: quota,
+    pastille_daily_quota: quota,
+    cigarette_baseline_per_day: baseline,
+    pastille_baseline_per_day: baseline,
+    cigarette_min_delay_minutes: delay,
+    pastille_min_delay_minutes: delay,
+    cigarette_weekly_reduction: 1,
+    pastille_weekly_reduction: 1,
+    price_per_pack: parseFloat($("#onb-price").value.replace(",", ".")) || 12.5,
     cigs_per_pack: parseInt($("#onb-cigs-per-pack").value, 10) || 20,
     start_date: isoDate(new Date()),
     tracking_mode: pickedMode,

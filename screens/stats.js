@@ -4,7 +4,7 @@
 // Chart.js est chargé en <script> classique dans index.html et expose
 // la classe globale `Chart` sur window — on l'utilise telle quelle ici.
 
-import { state, TRIGGER_LABELS, TRIGGER_TIPS, getCurrentCigarettes } from "../state.js";
+import { state, TRIGGER_LABELS, TRIGGER_TIPS, getCurrentCigarettes, planField } from "../state.js";
 import { $, pad2, startOfDay, daysBetween } from "../utils.js";
 import { effectiveQuota, effectiveBaseline, quotaOnDate } from "./main.js";
 import { getLabels } from "../labels.js";
@@ -195,7 +195,7 @@ function renderQuotaTrajectory() {
   const plan = state.plan;
   const start = startOfDay(startDate());
   const today = startOfDay(new Date());
-  const reduction = plan.weekly_reduction || 0;
+  const reduction = planField(plan, "weekly_reduction") || 0;
   const current = effectiveQuota(plan);
 
   $("#traj-current").textContent = "Quota actuel : " + current + " / jour";
@@ -221,7 +221,7 @@ function renderQuotaTrajectory() {
   const weeks = Math.max(0, Math.floor(daysBetween(start, today) / 7));
   const nextDate = new Date(start);
   nextDate.setDate(nextDate.getDate() + (weeks + 1) * 7);
-  const nextQuota = Math.max(1, plan.daily_quota - reduction * (weeks + 1));
+  const nextQuota = Math.max(1, planField(plan, "daily_quota") - reduction * (weeks + 1));
   const inDays = daysBetween(today, nextDate);
   const whenStr = nextDate.toLocaleDateString("fr-FR", {
     weekday: "long", day: "numeric", month: "long",
@@ -231,7 +231,7 @@ function renderQuotaTrajectory() {
     inDays + " jour" + (inDays > 1 ? "s" : "") + " (" + whenStr + ").";
 
   // Date d'arrivée au plancher : nb de semaines pour que le quota touche 1.
-  const weeksToFloor = Math.ceil((plan.daily_quota - 1) / reduction);
+  const weeksToFloor = Math.ceil((planField(plan, "daily_quota") - 1) / reduction);
   const floorDate = new Date(start);
   floorDate.setDate(floorDate.getDate() + weeksToFloor * 7);
   const floorStr = floorDate.toLocaleDateString("fr-FR", {
@@ -242,13 +242,15 @@ function renderQuotaTrajectory() {
 
 // Ajuste la réduction hebdo de ±1 depuis le stepper de la carte Trajectoire.
 // Bornée [0, 10] : 0 = quota figé (réversible à tout moment). merge-duplicates
-// ne touche que `weekly_reduction`. app.js rafraîchit ensuite main + settings.
+// ne touche que la colonne du mode courant — l'autre mode est intact.
+// app.js rafraîchit ensuite main + settings.
 export async function adjustWeeklyReduction(delta) {
   if (!state.plan) return false;
-  const cur = state.plan.weekly_reduction || 0;
+  const cur = planField(state.plan, "weekly_reduction") || 0;
   const next = Math.max(0, Math.min(10, cur + delta));
   if (next === cur) return false;            // déjà à la borne : no-op
-  const saved = await upsertQuitPlan({ weekly_reduction: next });
+  const mode = state.plan.tracking_mode || "cigarette";
+  const saved = await upsertQuitPlan({ [`${mode}_weekly_reduction`]: next });
   if (!saved) {
     alert("Impossible d'enregistrer. Vérifie ta connexion.");
     return false;

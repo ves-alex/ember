@@ -1,7 +1,7 @@
 // Écran principal : compteur du jour, bouton +1, délai, chips,
 // et les deux modals (confirmation bypass / sélection trigger).
 
-import { state, getCurrentCigarettes } from "../state.js";
+import { state, getCurrentCigarettes, planField } from "../state.js";
 import {
   $, $$, pad2, fmtTime, fmtMinSec, fmtDateFr, startOfDay, daysBetween,
 } from "../utils.js";
@@ -12,7 +12,7 @@ export function effectiveQuota(plan) {
   if (!plan) return 15;
   const start = new Date(plan.start_date + "T00:00:00");
   const weeks = Math.max(0, Math.floor(daysBetween(start, new Date()) / 7));
-  const reduced = plan.daily_quota - (plan.weekly_reduction || 0) * weeks;
+  const reduced = planField(plan, "daily_quota") - (planField(plan, "weekly_reduction") || 0) * weeks;
   return Math.max(1, reduced);
 }
 
@@ -22,14 +22,14 @@ export function quotaOnDate(plan, date) {
   if (!plan) return 15;
   const start = new Date(plan.start_date + "T00:00:00");
   const weeks = Math.max(0, Math.floor(daysBetween(start, date) / 7));
-  return Math.max(1, plan.daily_quota - (plan.weekly_reduction || 0) * weeks);
+  return Math.max(1, planField(plan, "daily_quota") - (planField(plan, "weekly_reduction") || 0) * weeks);
 }
 
 // Conso de référence figée (ce que l'user fumait/prenait avant de réduire).
 // Fallback sur daily_quota pour les plans créés avant la migration baseline.
 export function effectiveBaseline(plan) {
   if (!plan) return 15;
-  return plan.baseline_per_day || plan.daily_quota;
+  return planField(plan, "baseline_per_day") || planField(plan, "daily_quota");
 }
 
 export function renderMain() {
@@ -97,7 +97,7 @@ function computeYesterdayCount(allCigs) {
 function updateDelayDisplay(now) {
   const myCigs = getCurrentCigarettes();
   const last = myCigs[0];
-  const minDelay = (state.plan && state.plan.min_delay_minutes) || 60;
+  const minDelay = planField(state.plan, "min_delay_minutes") || 60;
   const btn = $("#btn-plus-one");
   const todayCigs = myCigs.filter((c) => new Date(c.smoked_at) >= startOfDay(now));
   const quota = effectiveQuota(state.plan);
@@ -140,7 +140,7 @@ export async function handlePlusOne() {
   const now = new Date();
   const myCigs = getCurrentCigarettes();
   const last = myCigs[0];
-  const minDelay = (state.plan && state.plan.min_delay_minutes) || 60;
+  const minDelay = planField(state.plan, "min_delay_minutes") || 60;
   const todayCount = myCigs.filter((c) => new Date(c.smoked_at) >= startOfDay(now)).length;
   const quota = effectiveQuota(state.plan);
 

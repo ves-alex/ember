@@ -85,3 +85,15 @@ export function getCurrentCigarettes() {
   const mode = (state.plan && state.plan.tracking_mode) || "cigarette";
   return state.cigarettes.filter((c) => (c.tracking_mode || "cigarette") === mode);
 }
+
+// Lit un paramètre du plan en respectant le mode courant. Les 4 paramètres
+// réglables (daily_quota, baseline_per_day, min_delay_minutes, weekly_reduction)
+// sont dédoublés en cigarette_* / pastille_* depuis la migration 2026-05-20.
+// Fallback sur l'ancienne colonne scalaire si la nouvelle n'existe pas
+// (cas du code déployé avant migration DB).
+export function planField(plan, field) {
+  if (!plan) return undefined;
+  const mode = plan.tracking_mode || "cigarette";
+  const v = plan[`${mode}_${field}`];
+  return v === undefined ? plan[field] : v;
+}
