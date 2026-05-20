@@ -18,7 +18,7 @@ import {
   renderMain, startDelayTimer, handlePlusOne, closeTriggerModal,
 } from "./screens/main.js";
 import { renderStats, renderDailyChart, adjustWeeklyReduction } from "./screens/stats.js";
-import { fillSettingsForm, saveSettings, syncModeFields } from "./screens/settings.js";
+import { fillSettingsForm, saveSettings, syncModeFields, switchTrackingMode } from "./screens/settings.js";
 import {
   showOnboardingStep, getCurrentStep, setPickedMode, setSubstitute, submitOnboarding,
 } from "./screens/onboarding.js";
@@ -126,8 +126,23 @@ function wireEvents() {
     showScreen("screen-auth");
   });
   populateFormSelect($("#set-form"));
-  // Toggle live du bloc forme/nom quand on bascule de mode dans les Réglages.
-  $("#set-mode").addEventListener("change", syncModeFields);
+  // Bascule live du mode (sans attendre « Enregistrer ») : tous les labels
+  // se mettent à jour instantanément, c'est réversible, pas d'action à sens
+  // unique. En cas d'échec réseau, on revert le <select> sur la valeur
+  // actuelle du plan.
+  $("#set-mode").addEventListener("change", async () => {
+    const newMode = $("#set-mode").value;
+    const result = await switchTrackingMode(newMode);
+    if (result.ok) {
+      applyModeToUI();
+      syncModeFields();
+      renderMain();
+    } else {
+      alert("Impossible de basculer le mode. Vérifie ta connexion.");
+      $("#set-mode").value = (state.plan && state.plan.tracking_mode) || "cigarette";
+      syncModeFields();
+    }
+  });
   $("#btn-save-settings").addEventListener("click", async () => {
     const result = await saveSettings();
     if (result.ok && result.modeChanged) {

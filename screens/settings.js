@@ -46,6 +46,25 @@ export function fillSettingsForm() {
 // Enregistre les réglages. Renvoie l'ancien mode + le nouveau mode pour
 // permettre au caller (app.js) de déclencher un applyModeToUI() si le
 // mode a changé.
+// Bascule le mode immédiatement (sans attendre le bouton « Enregistrer »).
+// Les labels (clopes/prises, économies, etc.) se mettent à jour en live,
+// ce qui rend le switch réversible et sans état intermédiaire désynchronisé.
+// Si on passe en pastille pour la première fois et qu'aucune forme n'est
+// stockée, on initialise à "pastille" par défaut. Le caller (app.js) se
+// charge d'appliquer applyModeToUI() / syncModeFields() / renderMain() en
+// cas de succès, et de revert le <select> en cas d'erreur.
+export async function switchTrackingMode(newMode) {
+  if (!state.plan) return { ok: false };
+  const updates = { tracking_mode: newMode };
+  if (newMode === "pastille" && !state.plan.substitute_form) {
+    updates.substitute_form = "pastille";
+  }
+  const saved = await upsertQuitPlan(updates);
+  if (!saved) return { ok: false };
+  state.plan = saved;
+  return { ok: true };
+}
+
 export async function saveSettings() {
   const previousMode = getCurrentMode();
   const newMode = $("#set-mode").value || "cigarette";
